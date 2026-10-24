@@ -14,7 +14,7 @@ h1{text-align:center;margin:12px 0;font-size:24px}
 .tab button.active{background:#224;color:white}
 #scramble{font-size:22px;margin:16px 0;line-height:1.6}
 #timeDisplay{font-size:72px;text-align:center;margin:40px 0;font-weight:bold}
-#mainArea{min-height:350px;}
+#timer{min-height:350px;}
 .btn-group{margin-top:20px}
 button{padding:8px 12px;border-radius:6px;border:1px solid #ccc;margin:4px;cursor:pointer}
 </style>
@@ -48,13 +48,14 @@ button{padding:8px 12px;border-radius:6px;border:1px solid #ccc;margin:4px;curso
 
 <script>
 // ========== 计时核心变量 ==========
-let isObserving = false;
 let isTiming = false;
 let timerId = null;
 let startTime = 0;
 let elapsed = 0;
 let scrambleText = "";
 let records = JSON.parse(localStorage.getItem("tdtimer_history")) || [];
+let holdStart = 0;
+const HOLD_THRESHOLD = 200; //长按判定毫秒
 
 // Tab切换
 document.querySelectorAll(".tab button").forEach(btn=>{
@@ -90,8 +91,11 @@ function renderTime(){
 // 开始计时
 function startTimer(){
     if(isTiming) return;
+    // 先清理残留定时器，防止叠加
+    clearInterval(timerId);
+    timerId = null;
+
     isTiming = true;
-    isObserving = false;
     startTime = Date.now();
     timerId = setInterval(renderTime, 20);
 }
@@ -140,11 +144,11 @@ function renderHistory(){
     })
 }
 
-// 全屏点击控制计时
-let holdStart = 0;
-const mainArea = document.getElementById("timer");
+// 全屏触屏计时控制
+const timerArea = document.getElementById("timer");
 
-mainArea.addEventListener("pointerdown", (e)=>{
+timerArea.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
     if(isTiming){
         stopTimer();
         return;
@@ -152,11 +156,11 @@ mainArea.addEventListener("pointerdown", (e)=>{
     holdStart = Date.now();
 })
 
-mainArea.addEventListener("pointerup", (e)=>{
+timerArea.addEventListener("pointerup", (e)=>{
+    e.preventDefault();
     if(isTiming) return;
     const holdTime = Date.now() - holdStart;
-    // 长按判定，大于200ms松开启动计时
-    if(holdTime > 200){
+    if(holdTime > HOLD_THRESHOLD){
         startTimer();
     }
 })
@@ -170,20 +174,36 @@ document.getElementById("newScramble").onclick = ()=>{
     generateScramble();
 }
 
-// ========== 智能魔方蓝牙模块 【GAN16UI / GANi4 测试版】 ==========
-const GAN_SERVICE_UUID = "0000fff0-0000-1000-8000-00805f9b34fb";
+// ========== 智能魔方蓝牙模块【多候选UUID】 ==========
+// GAN魔方常见候选服务UUID列表
+const GAN_UUID_LIST = [
+    "0000fff0-0000-1000-8000-00805f9b34fb",
+    "0000aadb-0000-1000-8000-00805f9b34fb"
+];
+
 document.getElementById("connectCube").onclick = async ()=>{
     try{
-        alert("开始扫描蓝牙设备！\n请在手机系统蓝牙内【删除GAN魔方的配对记录】，转动魔方唤醒");
+        alert("开始扫描蓝牙！\n⚠️ 手机系统蓝牙删除GAN魔方配对记录，转动魔方唤醒");
         const device = await navigator.bluetooth.requestDevice({
             acceptAllDevices:true,
-            optionalServices: [GAN_SERVICE_UUID]
+            optionalServices: GAN_UUID_LIST
         });
         console.log("选中设备：",device.name);
         const gatt = await device.gatt.connect();
-        alert("GATT连接成功！正在尝试读取GAN魔方服务");
-        const service = await gatt.getPrimaryService(GAN_SERVICE_UUID);
-        alert("✅ 成功获取GAN魔方Service！UUID匹配成功");
+        let foundService = null;
+        // 逐个尝试UUID
+        for(const suuid of GAN_UUID_LIST){
+            try{
+                foundService = await gatt.getPrimaryService(suuid);
+                alert("✅ 成功！找到魔方服务 UUID:" + suuid);
+                break;
+            }catch(err){
+                console.log("尝试UUID失败：",suuid, err);
+            }
+        }
+        if(!foundService){
+            alert("连接GATT成功，但是没有匹配的GAN服务UUID。\n需要使用nRF Connect抓包获取你的GAN16UI真实UUID");
+        }
     }catch(err){
         alert("连接失败！\n1.转动魔方唤醒\n2.完全关闭魔方星球APP\n\n错误："+err.message);
     }

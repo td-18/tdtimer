@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+<title>TDtimer 魔方测速器 cubingjs修复版</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
+body{background:#ffffff;color:#111111;padding:12px;max-width:900px;margin:0 auto;touch-action:manipulation;}
+h1{text-align:center;margin:12px 0;font-size:24px}
+.tab{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tab button{flex:1;padding:10px;border:none;border-radius:8px;background:#e8edff;font-size:16px}
+.tab button.active{background:#2b48b8;color:white}
+.timerArea{min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:manipulation;}
+#timeDisplay{font-size:72px;font-weight:bold;transition:color 0.2s}
+.hold{color:#ff9900}
+.ready{color:#22aa22}
+.scrambleText{margin:16px 0;font-size:20px;text-align:center}
+.btnsRow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0}
+.btnsRow button{padding:8px 12px;border-radius:6px;border:1px solid #ccc;background:white}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;padding:20px}
+.modal.show{display:flex}
+.modalContent{background:white;padding:20px;border-radius:12px;width:100%;max-width:600px;max-height:80vh;overflow:auto}
+.closeBtn{text-align:right;margin-bottom:8px;color:#666}
+#debugLog{margin-top:12px;font-size:13px;color:#333;background:#f4f4f4;padding:8px;border-radius:6px;max-height:160px;overflow:auto}
+</style>
+</head>
+<body>
+<h1>TDtimer 魔方测速器</h1>
+<div class="tab">
+    <button class="active" data-tab="timer">计时器</button>
+    <button data-tab="cfop">OLL/PLL公式</button>
+    <button data-tab="stats">成绩统计</button>
+</div>
+
+<div id="pageTimer">
+    <div class="scrambleText" id="scramble"></div>
+    <div class="timerArea" id="timerArea">
+        <div id="timeDisplay">0.00</div>
+    </div>
+    <div>状态：<span id="cubeStatus">未连接智能魔方</span></div>
+    <div class="btnsRow">
+        <button id="connectCubeBtn">🔗 连接智能魔方</button>
+        <button id="newScrambleBtn">新打乱</button>
+        <button id="pen2">+2</button>
+        <button id="dnf">DNF</button>
+    </div>
+    <div id="debugLog">调试日志：</div>
+</div>
+
+<div id="pageCfop" style="display:none">
+    <h3>OLL / PLL 训练</h3>
+    <p>公式库模块</p>
+</div>
+
+<div id="pageStats" style="display:none">
+    <h3>成绩统计</h3>
+    <div id="statsContent"></div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modalContent">
+        <div class="closeBtn" id="modalClose">✕</div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script>
+// Tab切换
+document.querySelectorAll('.tab button').forEach(btn=>{
+    btn.onclick = ()=>{
+        document.querySelectorAll('.tab button').forEach(b=>b.classList.remove('active'))
+        btn.classList.add('active')
+        const t = btn.dataset.tab
+        document.getElementById('pageTimer').style.display = t==='timer'?'block':'none'
+        document.getElementById('pageCfop').style.display = t==='cfop'?'block':'none'
+        document.getElementById('pageStats').style.display = t==='stats'?'block':'none'
+    }
+})
+
+const cubeStatusEl = document.getElementById('cubeStatus');
+const connectBtn = document.getElementById('connectCubeBtn');
+const debugLogEl = document.getElementById('debugLog');
+let smartCube = null;
+
+function addLog(text){
+    debugLogEl.innerText += "\n" + text;
+    debugLogEl.scrollTop = debugLogEl.scrollHeight;
+}
+
+connectBtn.onclick = async ()=>{
+    try{
+        debugLogEl.innerText = "调试日志：";
+        addLog("👉 点击连接按钮");
+
+        if(!navigator.bluetooth){
+            addLog("❌ 浏览器不支持WebBluetooth");
+            alert("请使用Chrome/Edge浏览器！");
+            return;
+        }
+        addLog("✅ 浏览器蓝牙API可用");
+        cubeStatusEl.innerText = "加载 cubing.js...";
+
+        // ✅ 修复：正确导入 connectSmartPuzzle
+        const { connectSmartPuzzle } = await import("https://cdn.cubing.net/v0/js/cubing/bluetooth");
+        addLog("✅ cubing bluetooth模块加载成功");
+
+        cubeStatusEl.innerText = "等待选择魔方设备";
+        addLog("👉 弹出设备选择窗口，请选择你的GAN魔方");
+
+        smartCube = await connectSmartPuzzle();
+        cubeStatusEl.innerText = "✅ 魔方已连接";
+        addLog("✅ 魔方连接成功！");
+
+        smartCube.addAlgLeafListener((event)=>{
+            addLog("魔方转动事件：" + event.algLeaf.move);
+        })
+        smartCube.on("disconnect", ()=>{
+            cubeStatusEl.innerText = "魔方断开";
+            addLog("⚠️ 魔方断开连接");
+            smartCube = null;
+        })
+    }catch(err){
+        cubeStatusEl.innerText = "❌ 连接失败";
+        addLog("❌ 错误：" + err.message);
+        alert(`连接失败！\n1.转动魔方唤醒\n2.完全关闭魔方星球APP\n\n错误：${err.message}`)
+    }
+}
+
+// 简易打乱生成
+function genScramble(){
+    const moves = ["R","L","U","D","F","B","R'","L'","U'","D'","F'","B'","R2","L2","U2","D2","F2","B2"]
+    let s = ""
+    for(let i=0;i<20;i++){
+        s += moves[Math.floor(Math.random()*moves.length)] + " "
+    }
+    return s.trim()
+}
+const scrambleEl = document.getElementById('scramble');
+function refreshScramble(){
+    scrambleEl.innerText = genScramble()
+}
+refreshScramble()
+document.getElementById('newScrambleBtn').onclick = refreshScramble
+
+// 计时核心 稳定版本 requestAnimationFrame
+const timeDisplay = document.getElementById('timeDisplay');
+const timerArea = document.getElementById('timerArea');
+let state = "idle"; // idle,holding,ready,running
+let startTime;
+let rafId = null;
+let touchTimer = null;
+
+function clearAllTimers(){
+    if(touchTimer) clearTimeout(touchTimer);
+    if(rafId) cancelAnimationFrame(rafId);
+}
+function updateTimer(){
+    const elapsed = (Date.now() - startTime)/1000;
+    timeDisplay.innerText = elapsed.toFixed(2);
+    rafId = requestAnimationFrame(updateTimer);
+}
+
+timerArea.addEventListener('touchstart',(e)=>{
+    e.preventDefault();
+    if(state !== "idle") return
+    state = "holding"
+    timeDisplay.classList.add("hold")
+    touchTimer = setTimeout(()=>{
+        state = "ready"
+        timeDisplay.classList.remove("hold")
+        timeDisplay.classList.add("ready")
+    },300)
+},{passive:false})
+
+timerArea.addEventListener('touchend',(e)=>{
+    clearAllTimers();
+    if(state === "ready"){
+        state = "running"
+        timeDisplay.classList.remove("ready")
+        startTime = Date.now()
+        updateTimer()
+    }else{
+        state = "idle"
+        timeDisplay.classList.remove("hold")
+    }
+})
+
+// 点击停止计时
+timerArea.addEventListener('click',()=>{
+    if(state === "running"){
+        clearAllTimers()
+        const finalTime = Number(timeDisplay.innerText)
+        saveSolve(finalTime)
+        state = "idle"
+    }
+})
+
+// 成绩数组
+let solves = JSON.parse(localStorage.getItem("solves")) || []
+function saveSolve(t){
+    solves.push(t)
+    localStorage.setItem("solves",JSON.stringify(solves))
+}
+document.getElementById('pen2').onclick = ()=>{
+    if(state === "running") return
+    const last = solves.pop()
+    if(last) saveSolve(Number(last)+2)
+}
+document.getElementById('dnf').onclick = ()=>{
+    if(state === "running") return
+    solves.pop()
+    saveSolve("DNF")
+}
+
+// 统计页面
+document.querySelector('[data-tab="stats"]').onclick = ()=>{
+    const c = document.getElementById('statsContent')
+    c.innerHTML = `<pre>${JSON.stringify(solves,null,2)}</pre>`
+}
+
+//弹窗
+document.getElementById('modalClose').onclick = ()=>{
+    document.getElementById('modal').classList.remove('show')
+}
+</script>
+</body>
+</html>

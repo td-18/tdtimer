@@ -56,6 +56,7 @@ let scrambleText = "";
 let records = JSON.parse(localStorage.getItem("tdtimer_history")) || [];
 let holdStart = 0;
 const HOLD_THRESHOLD = 200; //长按判定毫秒
+let stopCooldown = false;   // 停止计时冷却锁，防止松手立刻重开
 
 // Tab切换
 document.querySelectorAll(".tab button").forEach(btn=>{
@@ -90,8 +91,7 @@ function renderTime(){
 
 // 开始计时
 function startTimer(){
-    if(isTiming) return;
-    // 先清理残留定时器，防止叠加
+    if(isTiming || stopCooldown) return;
     clearInterval(timerId);
     timerId = null;
 
@@ -112,6 +112,12 @@ function stopTimer(){
     // 自动生成下一条打乱
     generateScramble();
     resetTimerValue();
+
+    // 🔑 开启冷却锁，300ms内忽略触屏触发，防止松手直接开表
+    stopCooldown = true;
+    setTimeout(()=>{
+        stopCooldown = false;
+    },300);
 }
 
 // 重置计时数值
@@ -159,6 +165,7 @@ timerArea.addEventListener("pointerdown", (e)=>{
 timerArea.addEventListener("pointerup", (e)=>{
     e.preventDefault();
     if(isTiming) return;
+    if(stopCooldown) return; //冷却期间直接跳过
     const holdTime = Date.now() - holdStart;
     if(holdTime > HOLD_THRESHOLD){
         startTimer();
@@ -175,7 +182,6 @@ document.getElementById("newScramble").onclick = ()=>{
 }
 
 // ========== 智能魔方蓝牙模块【多候选UUID】 ==========
-// GAN魔方常见候选服务UUID列表
 const GAN_UUID_LIST = [
     "0000fff0-0000-1000-8000-00805f9b34fb",
     "0000aadb-0000-1000-8000-00805f9b34fb"
@@ -191,7 +197,6 @@ document.getElementById("connectCube").onclick = async ()=>{
         console.log("选中设备：",device.name);
         const gatt = await device.gatt.connect();
         let foundService = null;
-        // 逐个尝试UUID
         for(const suuid of GAN_UUID_LIST){
             try{
                 foundService = await gatt.getPrimaryService(suuid);

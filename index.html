@@ -3,268 +3,195 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
-<title>TDtimer 魔方测速器</title>
+<title>TDtimer</title>
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
 body{background:#ffffff;color:#111111;padding:12px;max-width:900px;margin:0 auto;touch-action:manipulation;}
 h1{text-align:center;margin:12px 0;font-size:24px}
 .tab{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
-.tab button{flex:1;padding:10px;border:none;border-radius:8px;background:#e5e7eb;font-size:16px;cursor:pointer}
-.tab button.active{background:#1e40af;color:white}
-#timerArea{text-align:center;padding:40px 10px;font-size:72px;font-weight:bold;min-height:200px;user-select:none}
-.scrambleText{font-size:22px;margin-bottom:20px;line-height:1.6}
-.btnGroup{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:16px 0}
-.btnGroup button{padding:8px 12px;border:none;border-radius:6px;background:#ddd;cursor:pointer;font-size:15px}
-.logBox{margin-top:12px;padding:10px;background:#f3f4f6;border-radius:8px;font-size:13px}
-#historyList{margin-top:10px}
-.historyItem{padding:8px;border-bottom:1px solid #eee;cursor:pointer}
-.ollpllGrid{display:grid;grid-template-columns:repeat(auto-fill, minmax(140px,1fr));gap:8px;margin-top:10px}
-.ollpllItem{padding:8px;border:1px solid #ddd;border-radius:6px}
+.tab button{flex:1;padding:12px;border:none;background:#ddd;border-radius:8px;font-size:18px}
+.tab button.active{background:#224;color:white}
+#scramble{font-size:22px;margin:16px 0;line-height:1.6}
+#timeDisplay{font-size:72px;text-align:center;margin:40px 0;font-weight:bold}
+#mainArea{min-height:350px;}
+.btn-group{margin-top:20px}
+button{padding:8px 12px;border-radius:6px;border:1px solid #ccc;margin:4px;cursor:pointer}
 </style>
 </head>
 <body>
 <h1>TDtimer 魔方测速器</h1>
 <div class="tab">
-    <button class="active" data-tab="timer">计时器</button>
-    <button data-tab="ollpll">OLL/PLL公式</button>
-    <button data-tab="stats">成绩统计</button>
+<button class="active" data-tab="timer">计时器</button>
+<button data-tab="ollpll">OLL/PLL公式</button>
+<button data-tab="stats">成绩统计</button>
 </div>
 
-<div id="page-timer" class="page">
-    <div class="scrambleText" id="scramble"></div>
-    <div id="timerArea">0.00</div>
-    <div class="btnGroup">
-        <button id="connectCube">连接智能魔方</button>
-        <button id="newScramble">新打乱</button>
-        <button id="plus2">+2</button>
-        <button id="dnf">DNF</button>
-    </div>
-    <div class="logBox" id="debugLog">调试日志：</div>
+<div id="timer" class="page">
+<div id="scramble"></div>
+<div id="timeDisplay">0.00</div>
+<div class="btn-group">
+<button id="newScramble">新打乱</button>
+<button id="connectCube">连接智能魔方</button>
+</div>
 </div>
 
-<div id="page-ollpll" class="page" style="display:none">
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button id="showOLL">OLL</button>
-        <button id="showPLL">PLL</button>
-    </div>
-    <div class="ollpllGrid" id="ollpllContainer"></div>
+<div id="ollpll" class="page" style="display:none">
+<h2>OLL / PLL</h2>
+<p>公式库</p>
 </div>
 
-<div id="page-stats" class="page" style="display:none">
-    <h3>历史成绩（最新在前）</h3>
-    <div id="historyList"></div>
+<div id="stats" class="page" style="display:none">
+<h2>成绩统计</h2>
+<div id="historyList"></div>
 </div>
 
 <script>
-// ========== 基础变量 ==========
-let currentTab = "timer";
+// ========== 计时核心变量 ==========
+let isObserving = false;
 let isTiming = false;
+let timerId = null;
 let startTime = 0;
-let timerInterval = null;
 let elapsed = 0;
-let scramble = "";
-let cubeDevice = null;
-let histories = JSON.parse(localStorage.getItem("tdtimer_history") || "[]");
+let scrambleText = "";
+let records = JSON.parse(localStorage.getItem("tdtimer_history")) || [];
 
-// OLL 公式（你之前校对好的）
-const OLL_LIST = [
-    {name:"OLL 16",alg:"r U r' R U R' U' r U' r'"},
-    {name:"OLL 17",alg:"U2 R U R' U R' F R F' U2 R' F R F'"},
-    {name:"OLL 18",alg:"U2 F U R U2' R' S' R U R' S F'"},
-    {name:"OLL 23",alg:"U2 R2' D' R U2 R' D R U2 R"},
-    {name:"OLL 24",alg:"R' F' r U R U' r' F"},
-    {name:"OLL 25",alg:"F R' F' r U R U' r'"},
-    {name:"OLL 26",alg:"R' U' R U' R' U2 R"},
-    {name:"OLL 27",alg:"R U R' U' R' F R F'"},
-    {name:"OLL 28",alg:"r U R' U' r' R U R U' R'"}
-];
-// PLL公式
-const PLL_LIST = [
-    {name:"A+",alg:"x' R2 D2 R' U' R D2 R' U R' x"},
-    {name:"A-",alg:"x R2 D2 R U R' D2 R U' R x'"},
-    {name:"Ra Perm",alg:"U R U' R' U' R U R D R' U' R D' R' U2 R'"},
-    {name:"Rb Perm",alg:"R' U2 R U2 R' F R U R' U' R' F' R2"},
-    {name:"V Perm",alg:"R' U R' U' R D' R' D R' U D' R2 U' R2 D R2"},
-    {name:"Na Perm",alg:"R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'"}
-];
-
-// ========== Tab切换 ==========
+// Tab切换
 document.querySelectorAll(".tab button").forEach(btn=>{
     btn.onclick = ()=>{
         document.querySelectorAll(".tab button").forEach(b=>b.classList.remove("active"));
         btn.classList.add("active");
-        const tabName = btn.dataset.tab;
-        currentTab = tabName;
         document.querySelectorAll(".page").forEach(p=>p.style.display="none");
-        document.getElementById("page-"+tabName).style.display="block";
+        const tabName = btn.getAttribute("data-tab");
+        document.getElementById(tabName).style.display = "block";
     }
 })
 
-// ========== 简单打乱生成 ==========
-function genScramble(){
+// 随机打乱生成
+function generateScramble(){
     const moves = ["R","R'","R2","L","L'","L2","U","U'","U2","D","D'","D2","F","F'","F2","B","B'","B2"];
-    let s = "";
+    let s = [];
     for(let i=0;i<20;i++){
-        s += moves[Math.floor(Math.random()*moves.length)] + " ";
+        s.push(moves[Math.floor(Math.random()*moves.length)]);
     }
-    scramble = s.trim();
-    document.getElementById("scramble").innerText = scramble;
+    scrambleText = s.join(" ");
+    document.getElementById("scramble").innerText = scrambleText;
 }
-document.getElementById("newScramble").onclick = genScramble;
 
-// ========== 计时逻辑 ==========
-const timerArea = document.getElementById("timerArea");
-function formatTime(ms){
-    const t = ms / 1000;
-    return t.toFixed(2);
+// 更新时间显示
+function renderTime(){
+    if(isTiming){
+        elapsed = Date.now() - startTime;
+    }
+    const sec = (elapsed / 1000).toFixed(2);
+    document.getElementById("timeDisplay").innerText = sec;
 }
+
+// 开始计时
 function startTimer(){
     if(isTiming) return;
     isTiming = true;
-    startTime = Date.now() - elapsed;
-    timerInterval = setInterval(()=>{
-        elapsed = Date.now() - startTime;
-        timerArea.innerText = formatTime(elapsed);
-    }, 50);
+    isObserving = false;
+    startTime = Date.now();
+    timerId = setInterval(renderTime, 20);
 }
+
+// 停止计时
 function stopTimer(){
     if(!isTiming) return;
+    clearInterval(timerId);
+    timerId = null;
     isTiming = false;
-    clearInterval(timerInterval);
-    saveResult(elapsed, scramble);
-    elapsed = 0;
-    genScramble();
+    renderTime();
+    // 保存成绩
+    saveRecord(elapsed, scrambleText);
+    // 自动生成下一条打乱
+    generateScramble();
+    resetTimerValue();
 }
-// 全屏点击长按计时
-let touchTimer = null;
-document.getElementById("timerArea").addEventListener("pointerdown",()=>{
-    if(currentTab !== "timer") return;
-    touchTimer = setTimeout(()=>{
-        if(!isTiming) startTimer();
-    },300);
-})
-document.getElementById("timerArea").addEventListener("pointerup",()=>{
-    clearTimeout(touchTimer);
-    if(isTiming) stopTimer();
-})
-// 键盘空格
-document.addEventListener("keydown",(e)=>{
-    if(e.code === "Space" && currentTab === "timer"){
-        e.preventDefault();
-        if(!isTiming) startTimer();
-        else stopTimer();
-    }
-})
 
-// ========== 成绩保存 ==========
-function saveResult(time, scr){
-    histories.unshift({
-        time: time,
-        scramble: scr,
-        date: new Date().toLocaleString(),
-        penalty: ""
-    })
-    localStorage.setItem("tdtimer_history", JSON.stringify(histories));
+// 重置计时数值
+function resetTimerValue(){
+    elapsed = 0;
+    renderTime();
+}
+
+// 保存记录
+function saveRecord(timeMs, scramble){
+    records.unshift({
+        time: timeMs,
+        scramble: scramble,
+        date: new Date().toLocaleString()
+    });
+    localStorage.setItem("tdtimer_history", JSON.stringify(records));
     renderHistory();
 }
+
+// 渲染历史
 function renderHistory(){
     const container = document.getElementById("historyList");
     container.innerHTML = "";
-    histories.forEach((item,idx)=>{
+    records.forEach((r,idx)=>{
         const div = document.createElement("div");
-        div.className = "historyItem";
-        div.innerText = formatTime(item.time) + " | " + item.scramble;
-        div.onclick = ()=>{
-            if(confirm("删除本条成绩？")){
-                histories.splice(idx,1);
-                localStorage.setItem("tdtimer_history", JSON.stringify(histories));
-                renderHistory();
-            }
-        }
+        div.style.padding="8px;border-bottom:1px solid #eee";
+        const t = (r.time/1000).toFixed(2);
+        div.innerText = `${t} | ${r.scramble}`;
         container.appendChild(div);
     })
 }
 
-// ========== +2 DNF惩罚 ==========
-document.getElementById("plus2").onclick = ()=>{
-    if(histories.length>0){
-        histories[0].time += 2000;
-        histories[0].penalty = "+2";
-        localStorage.setItem("tdtimer_history", JSON.stringify(histories));
-        renderHistory();
+// 全屏点击控制计时
+let holdStart = 0;
+const mainArea = document.getElementById("timer");
+
+mainArea.addEventListener("pointerdown", (e)=>{
+    if(isTiming){
+        stopTimer();
+        return;
     }
-}
-document.getElementById("dnf").onclick = ()=>{
-    if(histories.length>0){
-        histories[0].penalty = "DNF";
-        localStorage.setItem("tdtimer_history", JSON.stringify(histories));
-        renderHistory();
+    holdStart = Date.now();
+})
+
+mainArea.addEventListener("pointerup", (e)=>{
+    if(isTiming) return;
+    const holdTime = Date.now() - holdStart;
+    // 长按判定，大于200ms松开启动计时
+    if(holdTime > 200){
+        startTimer();
     }
+})
+
+// 新打乱按钮
+document.getElementById("newScramble").onclick = ()=>{
+    if(isTiming){
+        stopTimer();
+    }
+    resetTimerValue();
+    generateScramble();
 }
 
-// ========== OLL / PLL渲染 ==========
-function renderOLLPLL(list){
-    const c = document.getElementById("ollpllContainer");
-    c.innerHTML = "";
-    list.forEach(i=>{
-        const div = document.createElement("div");
-        div.className = "ollpllItem";
-        div.innerHTML = `<b>${i.name}</b><br>${i.alg}`;
-        c.appendChild(div);
-    })
-}
-document.getElementById("showOLL").onclick = ()=>renderOLLPLL(OLL_LIST);
-document.getElementById("showPLL").onclick = ()=>renderOLLPLL(PLL_LIST);
-
-// ========== 🟢 蓝牙核心【调试版本 acceptAllDevices:true】 ==========
-const debugLog = document.getElementById("debugLog");
-function log(msg){
-    debugLog.innerText += "\n" + msg;
-    console.log(msg);
-}
+// ========== 智能魔方蓝牙模块 【GAN16UI / GANi4 测试版】 ==========
+const GAN_SERVICE_UUID = "0000fff0-0000-1000-8000-00805f9b34fb";
 document.getElementById("connectCube").onclick = async ()=>{
-    log(">>> 点击连接智能魔方，开启全盘扫描（acceptAllDevices）");
     try{
-        if(!navigator.bluetooth){
-            log("❌ 当前浏览器不支持Web Bluetooth");
-            alert("你的浏览器不支持网页蓝牙，请使用安卓Chrome");
-            return;
-        }
-        log("✅ Web Bluetooth API可用，正在扫描所有蓝牙设备...");
-        // 关键改动：acceptAllDevices: true，不预先指定UUID，全部设备显示
+        alert("开始扫描蓝牙设备！\n请在手机系统蓝牙内【删除GAN魔方的配对记录】，转动魔方唤醒");
         const device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true
+            acceptAllDevices:true,
+            optionalServices: [GAN_SERVICE_UUID]
         });
-        cubeDevice = device;
-        log(`✅ 选中设备名称：${device.name}`);
-        device.addEventListener('gattserverdisconnected', ()=>{
-            log("⚠️ 魔方蓝牙断开");
-        })
-        log("正在连接GATT服务器...");
-        const server = await device.gatt.connect();
-        log("✅ GATT连接成功！读取魔方全部服务列表：");
-        const services = await server.getPrimaryServices();
-        for(const s of services){
-            log(`👉 找到Service UUID: ${s.uuid}`);
-            console.log("魔方Service：",s);
-            const chars = await s.getCharacteristics();
-            for(const c of chars){
-                log(`    -> Characteristic: ${c.uuid}`);
-                console.log("特征值：",c);
-            }
-        }
-        alert("连接成功！请到浏览器控制台查看魔方完整UUID清单！");
+        console.log("选中设备：",device.name);
+        const gatt = await device.gatt.connect();
+        alert("GATT连接成功！正在尝试读取GAN魔方服务");
+        const service = await gatt.getPrimaryService(GAN_SERVICE_UUID);
+        alert("✅ 成功获取GAN魔方Service！UUID匹配成功");
     }catch(err){
-        log("❌ 连接失败！错误："+err.message);
         alert("连接失败！\n1.转动魔方唤醒\n2.完全关闭魔方星球APP\n\n错误："+err.message);
     }
 }
 
-// ========== 页面初始化 ==========
-genScramble();
+// 初始化
+generateScramble();
 renderHistory();
-renderOLLPLL(OLL_LIST);
 </script>
 </body>
 </html>

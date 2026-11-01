@@ -2,221 +2,243 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
-body{background:#ffffff;color:#111111;padding:12px;max-width:900px;margin:0 auto;touch-action:manipulation;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
+body{background:#fff;color:#111;padding:12px;max-width:95vw;margin:0 auto;touch-action:manipulation}
 h1{text-align:center;margin:12px 0;font-size:24px}
+.puzzleDropdownWrap{position:relative;width:fit-content;margin:0 auto 12px}
+#puzzleMainBtn{padding:9px 16px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:15px;cursor:pointer;min-width:120px}
+#puzzleDropdownList{position:absolute;top:105%;left:0;width:max-content;min-width:120px;max-width:90vw;border:1px solid #ddd;background:#fff;border-radius:0 0 8px 8px;box-shadow:0 4px 12px #00000022;display:none;z-index:99;max-height:320px;overflow-y:auto}
+#puzzleDropdownList.show{display:block}
+.puzzleOption{padding:8px 14px;cursor:pointer;outline:none}
+.puzzleOption:hover,.puzzleOption:focus{background:#f3f3f3}
+.puzzleOption.active{background:#333;color:#fff}
 .tab{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
-.tab button{flex:1;padding:12px;border:none;background:#ddd;border-radius:8px;font-size:18px}
-.tab button.active{background:#224;color:white}
-#scramble{font-size:22px;margin:16px 0;line-height:1.6}
-#timeDisplay{font-size:72px;text-align:center;margin:40px 0;font-weight:bold}
-#timer{min-height:350px;}
-.btn-group{margin-top:20px}
-button{padding:8px 12px;border-radius:6px;border:1px solid #ccc;margin:4px;cursor:pointer}
+.tab button{flex:1;padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:15px;cursor:pointer}
+.tab button.active{background:#333;color:#fff;border-color:#333}
+.subTab{display:flex;gap:4px;margin:12px 0}
+.subTab button{padding:8px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer}
+.subTab button.active{background:#444;color:#fff}
+#timerWrap{text-align:center;margin:20px 0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#timeDisplay{font-size:clamp(48px,15vw,72px);max-width:90vw;margin:10px auto;font-weight:bold;font-variant-numeric:tabular-nums}
+#timeDisplay.ready{color:#ffbb00}
+#timeDisplay.go{color:#22aa22}
+#timeDisplay.observe{color:#dd2222}
+.scrambleRow{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0}
+.scramble{font-size:18px;font-weight:500;word-break:break-all;min-height:24px;text-align:center}
+#newScrambleBtn{padding:6px 10px;cursor:pointer}
+#scrambleViewer{width:max(min(80vw,300px),200px);height:max(min(80vw,300px),200px);margin:10px auto;overflow:hidden}
+twisty-player{width:100%;height:100%}
+.formulaItem{padding:12px;border-bottom:1px solid #eee;cursor:pointer}
+.twistContainer{margin-top:8px;height:200px}
+#historyBox{margin-top:20px;border:1px solid #ddd;padding:12px;border-radius:8px}
+.history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+#clearRecordsBtn{padding:4px 10px;border:1px solid #c82423;color:#c82423;background:#fff;border-radius:6px;font-size:13px;cursor:pointer}
+.history-item{padding:8px 4px;cursor:pointer;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.history-item.selected{background:#f0f7ff}
+.history-time{font-variant-numeric:tabular-nums;font-size:16px}
+.history-time .penalty{font-weight:bold;margin-left:4px}
+.history-time .penalty.p2{color:#e08a00}
+.history-time .penalty.dnf{color:#c82423}
+.history-item .raw-time{color:#888;font-size:13px;margin-left:6px}
+.penalty-panel{margin-top:8px;padding:8px;background:#f8f8f8;border-radius:6px;word-break:break-all}
+.penalty-btn,.del-btn{margin:3px;padding:6px 12px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer}
+.del-btn{border-color:#ff6666;background:#fff2f2;color:#c82423}
+#statPanel{margin:12px 0;padding:10px;border:1px solid #ccc;border-radius:8px;text-align:center;line-height:1.6}
+#observeToggle{margin-bottom:8px;padding:6px 10px;cursor:pointer}
+.warn-text{color:#c82423;font-size:14px;margin-top:4px;text-align:center}
+@media (max-width: 360px) {
+  .tab button { padding: 6px; font-size: 13px; }
+  #puzzleMainBtn { padding: 6px 10px; font-size: 13px; }
+  .penalty-btn, .del-btn { padding: 4px 8px; font-size: 12px; }
+}
 </style>
 </head>
 <body>
-<h1>TDtimer 魔方测速器</h1>
-<div class="tab">
-<button class="active" data-tab="timer">计时器</button>
-<button data-tab="ollpll">OLL/PLL公式</button>
-<button data-tab="stats">成绩统计</button>
-</div>
+<header>
+    <h1>TDtimer</h1>
+    <div class="puzzleDropdownWrap">
+        <button type="button" id="puzzleMainBtn" aria-haspopup="menu" aria-expanded="false">三阶</button>
+        <div id="puzzleDropdownList" role="menu">
+            <div class="puzzleOption active" role="menuitem" tabindex="0">三阶</div>
+            <div class="puzzleOption" role="menuitem" tabindex="0">二阶</div>
+            <div class="puzzleOption" role="menuitem" tabindex="0">四阶</div>
+            <div class="puzzleOption" role="menuitem" tabindex="0">金字塔</div>
+            <div class="puzzleOption" role="menuitem" tabindex="0">斜转</div>
+        </div>
+    </div>
+    <nav class="tab" role="navigation">
+        <button type="button" data-tab="timer" class="active" aria-controls="timer">计时</button>
+        <button type="button" data-tab="formula" aria-controls="formula">公式库</button>
+        <button type="button" data-tab="bluetooth" aria-controls="bluetooth">蓝牙</button>
+    </nav>
+</header>
 
-<div id="timer" class="page">
-<div id="scramble"></div>
-<div id="timeDisplay">0.00</div>
-<div class="btn-group">
-<button id="newScramble">新打乱</button>
-<button id="connectCube">连接智能魔方</button>
-</div>
-</div>
-
-<div id="ollpll" class="page" style="display:none">
-<h2>OLL / PLL</h2>
-<p>公式库</p>
-</div>
-
-<div id="stats" class="page" style="display:none">
-<h2>成绩统计</h2>
-<div id="historyList"></div>
-</div>
+<main>
+    <section id="timer" class="page">
+        <button type="button" id="observeToggle">开启 WCA 15s观察</button>
+        <div class="scrambleRow">
+            <div>
+                <div id="scrambleText" class="scramble">加载中...</div>
+                <div id="warnMsg" class="warn-text"></div>
+            </div>
+            <button type="button" id="newScrambleBtn">新打乱</button>
+        </div>
+        <div id="scrambleViewer"></div>
+        <div id="statPanel">
+            <div>MO3：<span id="mo3">—</span> | AO5：<span id="ao5">—</span> | AO12：<span id="ao12">—</span></div>
+            <div>最佳：<span id="bestSingle">—</span> | 最佳AO5：<span id="bestAo5">—</span></div>
+        </div>
+        <div id="timerWrap">
+            <div id="timeDisplay">0.00</div>
+            <p id="tipText">单击观察 / 长按预备</p>
+        </div>
+        <div id="historyBox">
+            <div class="history-head"><h3>成绩记录</h3><button type="button" id="clearRecordsBtn">清空记录</button></div>
+            <div id="historyList"></div>
+        </div>
+    </section>
+    <section id="formula" class="page" style="display:none">
+        <div class="subTab"><button type="button" data-sub="oll" class="active">OLL</button><button type="button" data-sub="pll">PLL</button></div>
+        <div id="ollList"></div><div id="pllList" style="display:none"></div>
+    </section>
+    <section id="bluetooth" class="page" style="display:none"><h3>蓝牙待开发</h3></section>
+</main>
 
 <script>
-// ========== 计时核心变量 ==========
-let isTiming = false;
-let timerId = null;
-let startTime = 0;
-let elapsed = 0;
-let scrambleText = "";
-let records = JSON.parse(localStorage.getItem("tdtimer_history")) || [];
-let holdStart = 0;
-const HOLD_THRESHOLD = 200; //长按判定毫秒
-let stopCooldown = false;   // 停止计时冷却锁，防止松手立刻重开
+window.onerror = function(msg) { console.log("防崩捕获:", msg); return true; };
 
-// Tab切换
-document.querySelectorAll(".tab button").forEach(btn=>{
-    btn.onclick = ()=>{
-        document.querySelectorAll(".tab button").forEach(b=>b.classList.remove("active"));
-        btn.classList.add("active");
-        document.querySelectorAll(".page").forEach(p=>p.style.display="none");
-        const tabName = btn.getAttribute("data-tab");
-        document.getElementById(tabName).style.display = "block";
+window.ollRaw=[["OLL 1","R U R' U R U2 R'"],["OLL 2","R' U' R U' R' U2 R"],["OLL 3","F R U R' U' F'"],["OLL 4","f R U R' U' f'"],["OLL 5","F' L' U' L U F"],["OLL 6","f' L' U' L U f"],["OLL 7","R U2 R' U' R U' R'"],["OLL 8","L' U2 L U L' U L"],["OLL 9","R2 D' R U2 R' D R U2 R"],["OLL 10","L2 D L' U2 L D' L' U2 L'"],["OLL 11","r U R' U' r' F R F'"],["OLL 12","l' U' L U l F' L' F"],["OLL 13","F R U R' U' F' f R U R' U' f'"],["OLL 14","f' L' U' L U f F' L' U' L U F"],["OLL 15","r' U' l L' U' L U l' U l"],["OLL 16","r U r' R U R' U' r U' r'"],["OLL 17","U2 R U R' U R' F R F' U2 R' F R F'"],["OLL 18","U2 F U R U2 R' S' R U R' S F'"],["OLL 19","r' R U R U R' U' M' R' F R F'"],["OLL 20","r U R' U' M2 U R U' R' U' M'"],["OLL 21","R U2 R2 U' R2 U' R2 U2 R"],["OLL 22","L' U2 L2 U L2 U L2 U2 L'"],["OLL 23","U2 R2 D' R U2 R' D R U2 R"],["OLL 24","R' F' r U R U' r' F"],["OLL 25","F R' F' r U R U' r'"],["OLL 26","R' U' R U' R' U2 R"],["OLL 27","R' U2 R U R' U R"],["OLL 28","r U R' U' r' R U R U' R'"],["OLL 29","S' R U R' U' R' F R F' U S"],["OLL 30","U' F U R U2 R' U' R U2 R' U' F'"],["OLL 31","U F R' F' R U R U R' U' R U' R'"],["OLL 32","S R U R' U' R' F R f'"],["OLL 33","R U R' U' R' F R F'"],["OLL 34","U R U R2 U' R' F R U R U' F'"],["OLL 35","F R U R' U' F' U F R U R' U' F'"],["OLL 36","F' L' U' L U F U' F' L' U' L U F"],["OLL 37","F R U' R' U' R U R' F'"],["OLL 38","R U R' U R U' R' U' R' F R F'"],["OLL 39","L F' L' U' L U F U' L'"],["OLL 40","R' F R U R' U' F' U R"],["OLL 41","S U' R' F' U' F U R S'"],["OLL 42","S' F R U R' U' F' U S"],["OLL 43","U R' F U R U' R2 F' R2 U R' U' R"],["OLL 44","U2 F U R U' R' F'"],["OLL 45","F U R U' R' F'"],["OLL 46","F' U' L' U L F"],["OLL 47","U' F R' F' R U2 R U' R' U R U2 R'"],["OLL 48","F R U R' U' R U R' U' F'"],["OLL 49","U2 r U' r2 U r2 U r2 U' r"],["OLL 50","U2 r' U r2 U' r2 U' r2 U r'"],["OLL 51","U2 F U R U' R' U R U' R' F'"],["OLL 52","R' U' R U' R' U F' U F R"],["OLL 53","U' r' U2 R U R' U' R U R' U r"],["OLL 54","U' r U r' R U R' U' R U R' U' r U' r'"],["OLL 55","U R' F U R U' R2 F' R2 U R' U' R"],["OLL 56","r' U' r U' R' U R U' R' U R r' U r"],["OLL 57","U R U R' U' M' U R U' r'"]];
+window.pllRaw=[["Ua Perm","R U' R U R U R U' R' U' R2"],["Ub Perm","R2 U R U R' U' R' U' R' U R'"],["Z Perm","M2 U M2 U M' U2 M2 U2 M'"],["H Perm","M2 U M2 U2 M2 U M2"],["T Perm","R U R' U' R' F R2 U' R' U' R U R' F'"],["Y Perm","F R U' R' U' R U R' F' R U R' U' R' F R F'"],["Ja Perm","R' U L' U2 R U' R' U2 R L U'"],["Jb Perm","R U R' F' R U R' U' R' F R2 U' R'"],["Ga Perm","R2 u R' U R' U' R u' R2 y' R' U R"],["Gb Perm","R' U' R y R2 u R' U R U' R u' R2"],["Gc Perm","R2 u' R U' R U R' u R2 y R U' R'"],["Gd Perm","R U R' y' R2 u' R U' R' U R' u R2"],["Aa Perm","x' R2 D2 R' U' R D2 R' U R' x"],["Ab Perm","x R2 D2 R U R' D2 R U' R x'"],["Ra Perm","U R U' R' U' R U R D R' U' R D' R' U2 R'"],["Rb Perm","R' U2 R U2 R' F R U R' U' R' F' R2"],["V Perm","R' U R' U' R D' R' D R' U D' R2 U' R2 D R2"],["Na Perm","R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'"],["Nb Perm","R' U R U' R' F' U' F R U R' F R' F' R U' R"],["E Perm","x' R U' R' D R U R' D' R U R' D R U' R' D' x"],["F Perm","R' U' F' R U R' U' R' F R2 U' R' U' R U R' U R"]];
+
+const pList = [{key:"3x3x3",name:"三阶",eventId:"333"},{key:"2x2x2",name:"二阶",eventId:"222"},{key:"4x4x4",name:"四阶",eventId:"444"},{key:"pyraminx",name:"金字塔",eventId:"pyraminx"},{key:"skewb",name:"斜转",eventId:"skewb"}];
+const fData = {"333":["R U R' U R U2 R'","F R U R' U' F'"],"default":["R U R' U'"]};
+let curP = pList[0], curScr = "", isDrop = false, isFail = false;
+const mBtn = document.getElementById("puzzleMainBtn"), dList = document.getElementById("puzzleDropdownList"), sText = document.getElementById("scrambleText"), sCubeWrap = document.getElementById("scrambleViewer"), wMsg = document.getElementById("warnMsg");
+let sCube = null;
+
+function checkWebGL() { try { var c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl'))); } catch(e) { return false; } }
+
+setTimeout(() => {
+    try {
+        const s2 = document.createElement("script"); s2.type = "module"; s2.textContent = `import {Alg} from "https://cdn.cubing.net/v0/js/cubing/alg"; import {randomScrambleForEvent} from "https://cdn.cubing.net/v0/js/cubing/scramble"; window.Alg=Alg; window.randomScrambleForEvent=randomScrambleForEvent; window.dispatchEvent(new Event('libReady'));`; document.head.appendChild(s2);
+    } catch(e) { isFail = true; }
+}, 100);
+window.addEventListener('libReady', () => { isFail = false; genScr(); });
+
+const safeLS = { get: k => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }, set: (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch(e) {} }, remove: k => { try { localStorage.removeItem(k); } catch(e) {} } };
+
+async function genScr() {
+    sText.textContent = "生成中..."; wMsg.textContent = "";
+    let k = curP.puzzle || curP.key, fb = fData[curP.eventId] || fData.default;
+    if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
+        try { sCube = document.createElement("twisty-player"); sCube.setAttribute("puzzle","3x3x3"); sCube.setAttribute("background","none"); sCube.setAttribute("control-panel","none"); sCubeWrap.appendChild(sCube); } catch(e) { sCube = null; }
     }
-})
-
-// 随机打乱生成
-function generateScramble(){
-    const moves = ["R","R'","R2","L","L'","L2","U","U'","U2","D","D'","D2","F","F'","F2","B","B'","B2"];
-    let s = [];
-    for(let i=0;i<20;i++){
-        s.push(moves[Math.floor(Math.random()*moves.length)]);
-    }
-    scrambleText = s.join(" ");
-    document.getElementById("scramble").innerText = scrambleText;
+    if (isFail || !window.randomScrambleForEvent) { setS(fb[Math.floor(Math.random()*fb.length)], true); if (sCube) sCube.setAttribute("puzzle",k); return; }
+    try { let a = await window.randomScrambleForEvent(curP.eventId); setS(a.toString(), false); if (sCube) sCube.setAttribute("puzzle",k); } 
+    catch(e) { setS(fb[Math.floor(Math.random()*fb.length)], true); if (sCube) sCube.setAttribute("puzzle",k); }
 }
+function setS(str, fb) { curScr = str; sText.textContent = str; if (sCube) sCube.setAttribute("alg",str); wMsg.textContent = fb ? "⚠️ 降级：本地打乱" : ""; }
 
-// 更新时间显示
-function renderTime(){
-    if(isTiming){
-        elapsed = Date.now() - startTime;
-    }
-    const sec = (elapsed / 1000).toFixed(2);
-    document.getElementById("timeDisplay").innerText = sec;
+const optNodes = document.querySelectorAll('.puzzleOption');
+optNodes.forEach((opt, i) => {
+    const p = pList[i];
+    opt.onclick = async () => {
+        curP = p; isDrop = false; dList.classList.remove("show"); mBtn.setAttribute("aria-expanded", "false"); mBtn.textContent = curP.name; optNodes.forEach((o, j) => o.classList.toggle("active", i === j));
+        await genScr(); renderHist();
+    };
+    opt.onkeydown = async (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await opt.onclick(); } };
+});
+mBtn.onclick = e => { e.stopPropagation(); isDrop = !isDrop; dList.classList.toggle("show", isDrop); };
+document.addEventListener("click", () => { if (isDrop) { isDrop = false; dList.classList.remove("show"); } });
+document.getElementById("newScrambleBtn").onclick = () => genScr();
+
+let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, oOn = false, isOver = false, pStT = 0, wasIdle = false;
+const tDom = document.getElementById("timeDisplay"), tWrap = document.getElementById("timerWrap"), tTip = document.getElementById("tipText");
+document.getElementById("observeToggle").onclick = e => { oOn = !oOn; e.target.textContent = oOn ? "✅ 已开启15s" : "开启 15s观察"; };
+function clrT() { if(raf){cancelAnimationFrame(raf);raf=null;} if(rTimer){clearTimeout(rTimer);rTimer=null;} if(oTimer){clearInterval(oTimer);oTimer=null;} }
+function reset() { clrT(); tState = "idle"; isOver = false; tDom.className = ""; tDom.textContent = "0.00"; tTip.textContent = "单击观察 / 长按预备"; }
+function startT() { clrT(); stT = Date.now(); tState = "running"; tDom.className = ""; tTip.textContent = "计时中"; const lp = () => { if(tState!=="running")return; tDom.textContent = ((Date.now()-stT)/1000).toFixed(2); raf = requestAnimationFrame(lp); }; lp(); }
+function stopT() { if (tState === "running") saveRec(Date.now()-stT, curScr, isOver ? "+2" : ""); reset(); }
+function startO() {
+    clrT(); tState = "observe"; oStT = Date.now(); isOver = false; tDom.className = "observe"; tDom.textContent = "15"; tTip.textContent = "观察中";
+    oTimer = setInterval(() => { let el = Date.now()-oStT; if(el>=17000){ saveRec(0,curScr,"DNF"); reset(); return; } if(el>=15000){ isOver=true; tDom.textContent="0"; tTip.textContent="超15s +2"; } else tDom.textContent = Math.ceil((15000-el)/1000).toString(); }, 100);
 }
+function bPress() { clrT(); if(tState==="running"){ stopT(); return; } if(tState==="idle"||tState==="observe"){ pStT=Date.now(); tState="readyCount"; tDom.className="ready"; if(tState==="idle") tDom.textContent="0.00"; rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); } }
+function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ (h<800 && wasIdle && oOn) ? (reset(), startO()) : reset(); } }
+tWrap.addEventListener("touchstart", e => { e.preventDefault(); wasIdle = (tState==="idle"); bPress(); }, {passive:false});
+tWrap.addEventListener("touchend", e => { e.preventDefault(); if(tState!=="running") ePress(); }, {passive:false});
+document.addEventListener("keydown", e => { if(e.code==="Space" && tState!=="ready" && tState!=="running"){ e.preventDefault(); wasIdle=(tState==="idle"); bPress(); } });
+document.addEventListener("keyup", e => { if(e.code==="Space" && tState!=="running") ePress(); });
 
-// 开始计时
-function startTimer(){
-    if(isTiming || stopCooldown) return;
-    clearInterval(timerId);
-    timerId = null;
+let sIdx = null; const gKey = () => "td_records_" + curP.key;
+function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); renderHist(); }
+function setPen(i,p){ let r=safeLS.get(gKey()); if(r[i]){ r[i].penalty=p; safeLS.set(gKey(),r); renderHist(); } }
+function delRec(i){ let r=safeLS.get(gKey()); r.splice(i,1); sIdx=null; safeLS.set(gKey(),r); renderHist(); }
+function calcA(recs,n){ if(recs.length<n)return null; let v=recs.slice(0,n).map(r=>r.penalty==="DNF"?null:r.time+(r.penalty==="+2"?2000:0)); if(v.includes(null))return null; v.sort((a,b)=>a-b); return v.slice(1,-1).reduce((a,b)=>a+b,0)/(n-2); }
 
-    isTiming = true;
-    startTime = Date.now();
-    timerId = setInterval(renderTime, 20);
-}
-
-// 停止计时
-function stopTimer(){
-    if(!isTiming) return;
-    clearInterval(timerId);
-    timerId = null;
-    isTiming = false;
-    renderTime();
-    // 保存成绩
-    saveRecord(elapsed, scrambleText);
-    // 自动生成下一条打乱
-    generateScramble();
-    resetTimerValue();
-
-    // 🔑 开启冷却锁，300ms内忽略触屏触发，防止松手直接开表
-    stopCooldown = true;
-    setTimeout(()=>{
-        stopCooldown = false;
-    },300);
-}
-
-// 重置计时数值
-function resetTimerValue(){
-    elapsed = 0;
-    renderTime();
-}
-
-// 保存记录
-function saveRecord(timeMs, scramble){
-    records.unshift({
-        time: timeMs,
-        scramble: scramble,
-        date: new Date().toLocaleString()
+function renderHist() {
+    let r = safeLS.get(gKey()), box = document.getElementById("historyList"); while (box.firstChild) box.removeChild(box.firstChild);
+    let bst = r.length ? Math.min(...r.filter(x=>x.penalty!=="DNF").map(x=>x.time+(x.penalty==="+2"?2000:0))) : null;
+    ["mo3","ao5","ao12"].forEach((id,i)=>{ let v=calcA(r,i*2+3); document.getElementById(id).textContent = v ? (v/1000).toFixed(2) : "—"; });
+    document.getElementById("bestSingle").textContent = isFinite(bst) ? (bst/1000).toFixed(2) : "—";
+    
+    r.forEach((x,i)=>{
+        let d = document.createElement("div"); d.className = "history-item" + (sIdx===i ? " selected" : "");
+        let ts = document.createElement("span"); ts.className = "history-time";
+        let st = x.penalty==="DNF" ? "DNF" : ((x.time+(x.penalty==="+2"?2000:0))/1000).toFixed(2);
+        ts.textContent = st;
+        if(x.penalty) {
+            let ps = document.createElement("span"); ps.className = "penalty " + (x.penalty==='+2'?'p2':'dnf'); ps.textContent = x.penalty; ts.appendChild(ps);
+            let rs = document.createElement("span"); rs.className = "raw-time"; rs.textContent = `(${(x.time/1000).toFixed(2)})`; ts.appendChild(rs);
+        }
+        let ds = document.createElement("span"); ds.style.color = "#888"; ds.style.fontSize = "13px"; ds.textContent = x.date;
+        d.appendChild(ts); d.appendChild(ds);
+        d.onclick = () => { sIdx = sIdx===i ? null : i; renderHist(); };
+        box.appendChild(d);
+        
+        if(sIdx === i) {
+            let p = document.createElement("div"); p.className = "penalty-panel";
+            let sd = document.createElement("div"); sd.textContent = "打乱：" + x.scramble;
+            let bd = document.createElement("div"); bd.style.marginTop = "6px";
+            [["p2","+2"],["dnf","DNF"],["clear","清除"]].forEach(([act, txt]) => {
+                let btn = document.createElement("button"); btn.type = "button"; btn.className = "penalty-btn"; btn.dataset.act = act; btn.dataset.idx = i; btn.textContent = txt; bd.appendChild(btn);
+            });
+            let db = document.createElement("button"); db.type = "button"; db.className = "del-btn"; db.dataset.act = "del"; db.dataset.idx = i; db.textContent = "删除"; bd.appendChild(db);
+            p.appendChild(sd); p.appendChild(bd); box.appendChild(p);
+        }
     });
-    localStorage.setItem("tdtimer_history", JSON.stringify(records));
-    renderHistory();
 }
+document.getElementById("historyList").onclick = e => { let b=e.target.closest("button[data-act]"); if(!b)return; let i=parseInt(b.dataset.idx), a=b.dataset.act; if(a==="p2")setPen(i,"+2"); else if(a==="dnf")setPen(i,"DNF"); else if(a==="clear")setPen(i,""); else delRec(i); };
+document.getElementById("clearRecordsBtn").onclick = () => { if(confirm("清空当前记录？")){ safeLS.remove(gKey()); sIdx=null; renderHist(); } };
 
-// 渲染历史
-function renderHistory(){
-    const container = document.getElementById("historyList");
-    container.innerHTML = "";
-    records.forEach((r,idx)=>{
-        const div = document.createElement("div");
-        div.style.padding="8px;border-bottom:1px solid #eee";
-        const t = (r.time/1000).toFixed(2);
-        div.innerText = `${t} | ${r.scramble}`;
-        container.appendChild(div);
-    })
-}
+document.querySelectorAll(".tab button").forEach(b => { b.onclick = () => { document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".page").forEach(p=>p.style.display="none"); document.getElementById(b.dataset.tab).style.display="block"; }; });
+document.querySelectorAll(".subTab button").forEach(b => { b.onclick = () => { document.querySelectorAll(".subTab button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); document.getElementById("ollList").style.display=b.dataset.sub==="oll"?"block":"none"; document.getElementById("pllList").style.display=b.dataset.sub==="pll"?"block":"none"; }; });
 
-// 全屏触屏计时控制
-const timerArea = document.getElementById("timer");
-
-timerArea.addEventListener("pointerdown", (e)=>{
-    e.preventDefault();
-    if(isTiming){
-        stopTimer();
-        return;
-    }
-    holdStart = Date.now();
-})
-
-timerArea.addEventListener("pointerup", (e)=>{
-    e.preventDefault();
-    if(isTiming) return;
-    if(stopCooldown) return; //冷却期间直接跳过
-    const holdTime = Date.now() - holdStart;
-    if(holdTime > HOLD_THRESHOLD){
-        startTimer();
-    }
-})
-
-// 新打乱按钮
-document.getElementById("newScramble").onclick = ()=>{
-    if(isTiming){
-        stopTimer();
-    }
-    resetTimerValue();
-    generateScramble();
-}
-
-// ========== 智能魔方蓝牙模块【多候选UUID】 ==========
-const GAN_UUID_LIST = [
-    "0000fff0-0000-1000-8000-00805f9b34fb",
-    "0000aadb-0000-1000-8000-00805f9b34fb"
-];
-
-document.getElementById("connectCube").onclick = async ()=>{
-    try{
-        alert("开始扫描蓝牙！\n⚠️ 手机系统蓝牙删除GAN魔方配对记录，转动魔方唤醒");
-        const device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices:true,
-            optionalServices: GAN_UUID_LIST
-        });
-        console.log("选中设备：",device.name);
-        const gatt = await device.gatt.connect();
-        let foundService = null;
-        for(const suuid of GAN_UUID_LIST){
-            try{
-                foundService = await gatt.getPrimaryService(suuid);
-                alert("✅ 成功！找到魔方服务 UUID:" + suuid);
-                break;
-            }catch(err){
-                console.log("尝试UUID失败：",suuid, err);
+function renderF(raw, id) {
+    let w = document.getElementById(id); while (w.firstChild) w.removeChild(w.firstChild);
+    raw.forEach(item => {
+        let name=item[0], alg=item[1], s=""; try { s=new window.Alg(alg).invert().toString(); } catch(e){}
+        let d = document.createElement("div"); d.className = "formulaItem"; d.dataset.open = "false";
+        let b = document.createElement("b"); b.textContent = name; d.appendChild(b); d.appendChild(document.createTextNode("：" + alg));
+        let tc = document.createElement("div"); tc.className = "twistContainer"; d.appendChild(tc);
+        d.onclick = e => {
+            if(e.target.tagName.toLowerCase()==="twisty-player") return; let c=d.querySelector(".twistContainer");
+            if(d.dataset.open==="true"){ while(c.firstChild) c.removeChild(c.firstChild); d.dataset.open="false"; }
+            else {
+                document.querySelectorAll(".formulaItem").forEach(el => { let t=el.querySelector(".twistContainer"); if(t) while(t.firstChild) t.removeChild(t.firstChild); el.dataset.open="false"; });
+                try { let tp=document.createElement("twisty-player"); tp.setAttribute("puzzle","3x3x3"); tp.setAttribute("setup-alg",s); tp.setAttribute("alg",alg); tp.setAttribute("control-panel","playback"); tp.setAttribute("autoplay","false"); c.appendChild(tp); } catch(err) { c.textContent = "⚠️ 当前环境不支持3D渲染"; }
+                d.dataset.open = "true";
             }
-        }
-        if(!foundService){
-            alert("连接GATT成功，但是没有匹配的GAN服务UUID。\n需要使用nRF Connect抓包获取你的GAN16UI真实UUID");
-        }
-    }catch(err){
-        alert("连接失败！\n1.转动魔方唤醒\n2.完全关闭魔方星球APP\n\n错误："+err.message);
-    }
+        };
+        w.appendChild(d);
+    });
 }
 
-// 初始化
-generateScramble();
-renderHistory();
+genScr(); renderHist(); renderF(window.ollRaw, "ollList"); renderF(window.pllRaw, "pllList");
 </script>
 </body>
 </html>

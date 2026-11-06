@@ -169,10 +169,40 @@ function startO() {
 }
 function bPress() { clrT(); if(tState==="running"){ stopT(); return; } if(tState==="idle"||tState==="observe"){ pStT=Date.now(); tState="readyCount"; tDom.className="ready"; if(tState==="idle") tDom.textContent="0.00"; rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); } }
 function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ (h<800 && wasIdle && oOn) ? (reset(), startO()) : reset(); } }
-tWrap.addEventListener("touchstart", e => { e.preventDefault(); wasIdle = (tState==="idle"); bPress(); }, {passive:false});
-tWrap.addEventListener("touchend", e => { e.preventDefault(); if(tState!=="running") ePress(); }, {passive:false});
-document.addEventListener("keydown", e => { if(e.code==="Space" && tState!=="ready" && tState!=="running"){ e.preventDefault(); wasIdle=(tState==="idle"); bPress(); } });
-document.addEventListener("keyup", e => { if(e.code==="Space" && tState!=="running") ePress(); });
+
+// 手机端触摸事件
+tWrap.addEventListener("touchstart", e => { e.preventDefault(); wasIdle = (tState === "idle"); bPress(); }, { passive: false });
+tWrap.addEventListener("touchend", e => { e.preventDefault(); if (tState !== "running") ePress(); }, { passive: false });
+
+// 电脑端鼠标事件
+tWrap.addEventListener("mousedown", e => { 
+    if (e.button !== 0) return; // 只响应鼠标左键
+    e.preventDefault(); 
+    wasIdle = (tState === "idle"); 
+    bPress(); 
+});
+tWrap.addEventListener("mouseup", e => { 
+    if (e.button !== 0) return; 
+    e.preventDefault(); 
+    if (tState !== "running") ePress(); 
+});
+
+// 电脑端键盘事件（修复长按连发）
+document.addEventListener("keydown", e => { 
+    if (e.code === "Space") {
+        e.preventDefault(); 
+        if (!e.repeat && tState !== "ready" && tState !== "running") { 
+            wasIdle = (tState === "idle"); 
+            bPress(); 
+        } 
+    }
+});
+document.addEventListener("keyup", e => { 
+    if (e.code === "Space") { 
+        e.preventDefault();
+        if (tState !== "running") ePress(); 
+    } 
+});
 
 let sIdx = null; const gKey = () => "td_records_" + curP.key;
 function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); renderHist(); }

@@ -156,6 +156,7 @@ mBtn.onclick = e => { e.stopPropagation(); isDrop = !isDrop; dList.classList.tog
 document.addEventListener("click", () => { if (isDrop) { isDrop = false; dList.classList.remove("show"); } });
 document.getElementById("newScrambleBtn").onclick = () => genScr();
 
+// 计时器状态机
 let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, oOn = false, isOver = false, pStT = 0, wasIdle = false;
 const tDom = document.getElementById("timeDisplay"), tWrap = document.getElementById("timerWrap"), tTip = document.getElementById("tipText");
 document.getElementById("observeToggle").onclick = e => { oOn = !oOn; e.target.textContent = oOn ? "✅ 已开启15s" : "开启 15s观察"; };
@@ -170,13 +171,22 @@ function startO() {
 function bPress() { clrT(); if(tState==="running"){ stopT(); return; } if(tState==="idle"||tState==="observe"){ pStT=Date.now(); tState="readyCount"; tDom.className="ready"; if(tState==="idle") tDom.textContent="0.00"; rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); } }
 function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ (h<800 && wasIdle && oOn) ? (reset(), startO()) : reset(); } }
 
-// 手机端触摸事件
-tWrap.addEventListener("touchstart", e => { e.preventDefault(); wasIdle = (tState === "idle"); bPress(); }, { passive: false });
-tWrap.addEventListener("touchend", e => { e.preventDefault(); if (tState !== "running") ePress(); }, { passive: false });
+// ========== 统一事件处理逻辑 ==========
 
-// 电脑端鼠标事件
+// 手机端：触摸按下停止/预备，松开开始
+tWrap.addEventListener("touchstart", e => { 
+    e.preventDefault(); 
+    wasIdle = (tState === "idle"); 
+    bPress(); 
+}, { passive: false });
+tWrap.addEventListener("touchend", e => { 
+    e.preventDefault(); 
+    if (tState !== "running") ePress(); 
+}, { passive: false });
+
+// 电脑端：鼠标按下停止/预备，松开开始
 tWrap.addEventListener("mousedown", e => { 
-    if (e.button !== 0) return; // 只响应鼠标左键
+    if (e.button !== 0) return; // 只响应左键
     e.preventDefault(); 
     wasIdle = (tState === "idle"); 
     bPress(); 
@@ -187,14 +197,14 @@ tWrap.addEventListener("mouseup", e => {
     if (tState !== "running") ePress(); 
 });
 
-// 电脑端键盘事件（修复长按连发）
+// 电脑端：键盘按下停止/预备，松开开始
 document.addEventListener("keydown", e => { 
     if (e.code === "Space") {
         e.preventDefault(); 
-        if (!e.repeat && tState !== "ready" && tState !== "running") { 
-            wasIdle = (tState === "idle"); 
-            bPress(); 
-        } 
+        if (e.repeat) return; // 忽略系统的连发
+        
+        wasIdle = (tState === "idle"); 
+        bPress(); 
     }
 });
 document.addEventListener("keyup", e => { 
@@ -203,6 +213,8 @@ document.addEventListener("keyup", e => {
         if (tState !== "running") ePress(); 
     } 
 });
+
+// ===================================
 
 let sIdx = null; const gKey = () => "td_records_" + curP.key;
 function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); renderHist(); }

@@ -51,7 +51,7 @@ twisty-player{width:100%;height:100%}
 #observeToggle{margin-bottom:8px;padding:6px 10px;cursor:pointer}
 .warn-text{color:#c82423;font-size:14px;margin-top:4px;text-align:center}
 
-/* 新增：训练器面板样式 */
+/* 训练器面板样式 */
 .trainerPanel{display:flex;gap:8px;justify-content:center;margin-bottom:12px;padding:10px;background:#f9f9f9;border-radius:8px;border:1px dashed #ccc;}
 .trainerPanel button{padding:8px 16px;font-size:14px;font-weight:bold;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;transition:all 0.2s;}
 .trainerPanel button:hover{background:#e0e0e0;}
@@ -111,7 +111,6 @@ twisty-player{width:100%;height:100%}
     </section>
 
     <section id="formula" class="page" style="display:none">
-        <!-- 新增：训练器面板 -->
         <div class="trainerPanel">
             <button type="button" id="btnTrainOLL">🎯 训练 OLL</button>
             <button type="button" id="btnTrainPLL">🎯 训练 PLL</button>
@@ -152,23 +151,32 @@ window.addEventListener('libReady', () => { isFail = false; genScr(); });
 const safeLS = { get: k => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }, set: (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch(e) {} }, remove: k => { try { localStorage.removeItem(k); } catch(e) {} } };
 
 async function genScr() {
-    // 训练模式逻辑
+    // 训练模式：计算逆公式
     if (trainMode) {
         let pool = trainMode === 'oll' ? window.ollRaw : window.pllRaw;
         let item = pool[Math.floor(Math.random() * pool.length)];
         currentTrainCase = item[0];
         let alg = item[1];
+        
+        // 生成严格的逆公式（反向且反转）
         let setup = "";
-        try { setup = new window.Alg(alg).invert().toString(); } catch(e) { setup = alg; }
+        try {
+            setup = new window.Alg(alg).invert().toString();
+        } catch(e) {
+            // 兜底逻辑：如果解析失败，直接展示原公式
+            setup = alg; 
+        }
         
         curScr = setup;
         sText.textContent = `[${currentTrainCase}] 打乱: ${setup}`;
         wMsg.textContent = "";
+        
         if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
             try { sCube = document.createElement("twisty-player"); sCube.setAttribute("puzzle","3x3x3"); sCube.setAttribute("background","none"); sCube.setAttribute("control-panel","none"); sCubeWrap.appendChild(sCube); } catch(e) { sCube = null; }
         }
         if (sCube) {
             sCube.setAttribute("puzzle", "3x3x3");
+            // 3D 魔方加载打乱序列
             sCube.setAttribute("alg", setup);
         }
         return;
@@ -186,7 +194,7 @@ async function genScr() {
 }
 function setS(str, fb) { curScr = str; sText.textContent = str; if (sCube) sCube.setAttribute("alg",str); wMsg.textContent = fb ? "⚠️ 降级：本地打乱" : ""; }
 
-// === 训练器按钮事件 ===
+// === 训练器按钮 ===
 const btnTrainOLL = document.getElementById("btnTrainOLL");
 const btnTrainPLL = document.getElementById("btnTrainPLL");
 const btnStopTrain = document.getElementById("btnStopTrain");
@@ -197,13 +205,13 @@ function startTrain(mode) {
     btnTrainPLL.classList.toggle("active", mode === 'pll');
     btnStopTrain.style.display = "inline-block";
     
-    // 切回计时页面
+    // 切换到计时页面
     document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active")); 
     document.querySelector('[data-tab="timer"]').classList.add("active");
     document.querySelectorAll(".page").forEach(p=>p.style.display="none"); 
     document.getElementById("timer").style.display="block";
     
-    genScr(); // 立即生成
+    genScr(); 
 }
 
 btnTrainOLL.onclick = () => startTrain('oll');
@@ -257,7 +265,7 @@ function stopT() {
         clrT();
         tDom.className = ""; 
         tTip.textContent = "单击观察 / 长按预备";
-        genScr(); // 结束立刻刷新打乱（训练模式下会自动抽下一个Case）
+        genScr(); // 结束立刻刷新，如果是训练模式，这里会自动加载下一个逆公式
     } else {
         reset();
     }
@@ -329,7 +337,10 @@ document.addEventListener("keyup", e => {
 
 // ===================================
 
-let sIdx = null; const gKey = () => "td_records_" + (trainMode ? trainMode : curP.key); // 训练模式单独存记录
+let sIdx = null; 
+// 训练模式的成绩单独存储，不污染三阶数据
+const gKey = () => "td_records_" + (trainMode ? trainMode : curP.key); 
+
 function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); renderHist(); }
 function setPen(i,p){ let r=safeLS.get(gKey()); if(r[i]){ r[i].penalty=p; safeLS.set(gKey(),r); renderHist(); } }
 function delRec(i){ let r=safeLS.get(gKey()); r.splice(i,1); sIdx=null; safeLS.set(gKey(),r); renderHist(); }

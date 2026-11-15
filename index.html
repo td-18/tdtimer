@@ -50,6 +50,14 @@ twisty-player{width:100%;height:100%}
 #statPanel{margin:12px 0;padding:10px;border:1px solid #ccc;border-radius:8px;text-align:center;line-height:1.6}
 #observeToggle{margin-bottom:8px;padding:6px 10px;cursor:pointer}
 .warn-text{color:#c82423;font-size:14px;margin-top:4px;text-align:center}
+
+/* 新增：训练器面板样式 */
+.trainerPanel{display:flex;gap:8px;justify-content:center;margin-bottom:12px;padding:10px;background:#f9f9f9;border-radius:8px;border:1px dashed #ccc;}
+.trainerPanel button{padding:8px 16px;font-size:14px;font-weight:bold;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;transition:all 0.2s;}
+.trainerPanel button:hover{background:#e0e0e0;}
+.trainerPanel button.active{background:#333;color:#fff;border-color:#333;}
+.trainerPanel button.stop-btn{border-color:#c82423;color:#c82423;display:none;}
+
 @media (max-width: 360px) {
   .tab button { padding: 6px; font-size: 13px; }
   #puzzleMainBtn { padding: 6px 10px; font-size: 13px; }
@@ -101,10 +109,19 @@ twisty-player{width:100%;height:100%}
             <div id="historyList"></div>
         </div>
     </section>
+
     <section id="formula" class="page" style="display:none">
-        <div class="subTab"><button type="button" data-sub="oll" class="active">OLL</button><button type="button" data-sub="pll">PLL</button></div>
+        <!-- 新增：训练器面板 -->
+        <div class="trainerPanel">
+            <button type="button" id="btnTrainOLL">🎯 训练 OLL</button>
+            <button type="button" id="btnTrainPLL">🎯 训练 PLL</button>
+            <button type="button" id="btnStopTrain" class="stop-btn">🛑 停止训练</button>
+        </div>
+
+        <div class="subTab"><button type="button" data-sub="oll" class="active">OLL 公式</button><button type="button" data-sub="pll">PLL 公式</button></div>
         <div id="ollList"></div><div id="pllList" style="display:none"></div>
     </section>
+
     <section id="bluetooth" class="page" style="display:none"><h3>蓝牙待开发</h3></section>
 </main>
 
@@ -117,6 +134,9 @@ window.pllRaw=[["Ua Perm","R U' R U R U R U' R' U' R2"],["Ub Perm","R2 U R U R' 
 const pList = [{key:"3x3x3",name:"三阶",eventId:"333"},{key:"2x2x2",name:"二阶",eventId:"222"},{key:"4x4x4",name:"四阶",eventId:"444"},{key:"pyraminx",name:"金字塔",eventId:"pyraminx"},{key:"skewb",name:"斜转",eventId:"skewb"}];
 const fData = {"333":["R U R' U R U2 R'","F R U R' U' F'"],"default":["R U R' U'"]};
 let curP = pList[0], curScr = "", isDrop = false, isFail = false;
+let trainMode = null; // null | 'oll' | 'pll'
+let currentTrainCase = "";
+
 const mBtn = document.getElementById("puzzleMainBtn"), dList = document.getElementById("puzzleDropdownList"), sText = document.getElementById("scrambleText"), sCubeWrap = document.getElementById("scrambleViewer"), wMsg = document.getElementById("warnMsg");
 let sCube = null;
 
@@ -132,6 +152,29 @@ window.addEventListener('libReady', () => { isFail = false; genScr(); });
 const safeLS = { get: k => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }, set: (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch(e) {} }, remove: k => { try { localStorage.removeItem(k); } catch(e) {} } };
 
 async function genScr() {
+    // 训练模式逻辑
+    if (trainMode) {
+        let pool = trainMode === 'oll' ? window.ollRaw : window.pllRaw;
+        let item = pool[Math.floor(Math.random() * pool.length)];
+        currentTrainCase = item[0];
+        let alg = item[1];
+        let setup = "";
+        try { setup = new window.Alg(alg).invert().toString(); } catch(e) { setup = alg; }
+        
+        curScr = setup;
+        sText.textContent = `[${currentTrainCase}] 打乱: ${setup}`;
+        wMsg.textContent = "";
+        if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
+            try { sCube = document.createElement("twisty-player"); sCube.setAttribute("puzzle","3x3x3"); sCube.setAttribute("background","none"); sCube.setAttribute("control-panel","none"); sCubeWrap.appendChild(sCube); } catch(e) { sCube = null; }
+        }
+        if (sCube) {
+            sCube.setAttribute("puzzle", "3x3x3");
+            sCube.setAttribute("alg", setup);
+        }
+        return;
+    }
+
+    // 普通模式逻辑
     sText.textContent = "生成中..."; wMsg.textContent = "";
     let k = curP.puzzle || curP.key, fb = fData[curP.eventId] || fData.default;
     if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
@@ -142,6 +185,39 @@ async function genScr() {
     catch(e) { setS(fb[Math.floor(Math.random()*fb.length)], true); if (sCube) sCube.setAttribute("puzzle",k); }
 }
 function setS(str, fb) { curScr = str; sText.textContent = str; if (sCube) sCube.setAttribute("alg",str); wMsg.textContent = fb ? "⚠️ 降级：本地打乱" : ""; }
+
+// === 训练器按钮事件 ===
+const btnTrainOLL = document.getElementById("btnTrainOLL");
+const btnTrainPLL = document.getElementById("btnTrainPLL");
+const btnStopTrain = document.getElementById("btnStopTrain");
+
+function startTrain(mode) {
+    trainMode = mode;
+    btnTrainOLL.classList.toggle("active", mode === 'oll');
+    btnTrainPLL.classList.toggle("active", mode === 'pll');
+    btnStopTrain.style.display = "inline-block";
+    
+    // 切回计时页面
+    document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active")); 
+    document.querySelector('[data-tab="timer"]').classList.add("active");
+    document.querySelectorAll(".page").forEach(p=>p.style.display="none"); 
+    document.getElementById("timer").style.display="block";
+    
+    genScr(); // 立即生成
+}
+
+btnTrainOLL.onclick = () => startTrain('oll');
+btnTrainPLL.onclick = () => startTrain('pll');
+btnStopTrain.onclick = () => {
+    trainMode = null;
+    currentTrainCase = "";
+    btnTrainOLL.classList.remove("active");
+    btnTrainPLL.classList.remove("active");
+    btnStopTrain.style.display = "none";
+    genScr(); // 恢复普通打乱
+};
+
+// =======================
 
 const optNodes = document.querySelectorAll('.puzzleOption');
 optNodes.forEach((opt, i) => {
@@ -156,21 +232,12 @@ mBtn.onclick = e => { e.stopPropagation(); isDrop = !isDrop; dList.classList.tog
 document.addEventListener("click", () => { if (isDrop) { isDrop = false; dList.classList.remove("show"); } });
 document.getElementById("newScrambleBtn").onclick = () => genScr();
 
-// ========== 计时器状态机 ==========
+// 计时器状态机
 let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, oOn = false, isOver = false, pStT = 0, wasIdle = false;
 const tDom = document.getElementById("timeDisplay"), tWrap = document.getElementById("timerWrap"), tTip = document.getElementById("tipText");
 document.getElementById("observeToggle").onclick = e => { oOn = !oOn; e.target.textContent = oOn ? "✅ 已开启15s" : "开启 15s观察"; };
-
 function clrT() { if(raf){cancelAnimationFrame(raf);raf=null;} if(rTimer){clearTimeout(rTimer);rTimer=null;} if(oTimer){clearInterval(oTimer);oTimer=null;} }
-
-function reset() { 
-    clrT(); 
-    tState = "idle"; 
-    isOver = false; 
-    tDom.className = ""; 
-    tDom.textContent = "0.00"; 
-    tTip.textContent = "单击观察 / 长按预备"; 
-}
+function reset() { clrT(); tState = "idle"; isOver = false; tDom.className = ""; tDom.textContent = "0.00"; tTip.textContent = "单击观察 / 长按预备"; }
 
 function startT() { 
     clrT(); stT = Date.now(); tState = "running"; tDom.className = ""; tTip.textContent = "计时中"; 
@@ -182,7 +249,6 @@ function startT() {
     lp(); 
 }
 
-// 修改：结束时不归零，而是保留成绩并自动打乱
 function stopT() { 
     if (tState === "running") { 
         saveRec(Date.now()-stT, curScr, isOver ? "+2" : ""); 
@@ -191,7 +257,7 @@ function stopT() {
         clrT();
         tDom.className = ""; 
         tTip.textContent = "单击观察 / 长按预备";
-        genScr(); // 【新增】结束立刻刷新打乱
+        genScr(); // 结束立刻刷新打乱（训练模式下会自动抽下一个Case）
     } else {
         reset();
     }
@@ -203,7 +269,7 @@ function startO() {
         let el = Date.now()-oStT; 
         if(el>=17000){ 
             saveRec(0,curScr,"DNF"); 
-            reset(); // 观察超时直接归零重置
+            reset(); 
             return; 
         } 
         if(el>=15000){ isOver=true; tDom.textContent="0"; tTip.textContent="超15s +2"; } 
@@ -218,7 +284,6 @@ function bPress() {
         pStT=Date.now(); 
         tState="readyCount"; 
         tDom.className="ready"; 
-        // 修复：原来这里 tState 已经变了导致判断失败。现在用 wasIdle 判断。
         if(wasIdle) tDom.textContent="0.00"; 
         rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); 
     } 
@@ -234,7 +299,6 @@ function ePress() {
             reset(); 
             startO();
         } else {
-            // 如果是短按取消，保留时间显示（不调用 reset 归零）
             tState = "idle";
             tDom.className = "";
             tTip.textContent = "单击观察 / 长按预备";
@@ -242,24 +306,12 @@ function ePress() {
     } 
 }
 
-// 手机端：触摸
 tWrap.addEventListener("touchstart", e => { e.preventDefault(); wasIdle = (tState === "idle"); bPress(); }, { passive: false });
 tWrap.addEventListener("touchend", e => { e.preventDefault(); if (tState !== "running") ePress(); }, { passive: false });
 
-// 电脑端：鼠标
-tWrap.addEventListener("mousedown", e => { 
-    if (e.button !== 0) return; 
-    e.preventDefault(); 
-    wasIdle = (tState === "idle"); 
-    bPress(); 
-});
-tWrap.addEventListener("mouseup", e => { 
-    if (e.button !== 0) return; 
-    e.preventDefault(); 
-    if (tState !== "running") ePress(); 
-});
+tWrap.addEventListener("mousedown", e => { if (e.button !== 0) return; e.preventDefault(); wasIdle = (tState === "idle"); bPress(); });
+tWrap.addEventListener("mouseup", e => { if (e.button !== 0) return; e.preventDefault(); if (tState !== "running") ePress(); });
 
-// 电脑端：键盘
 document.addEventListener("keydown", e => { 
     if (e.code === "Space") {
         e.preventDefault(); 
@@ -277,7 +329,7 @@ document.addEventListener("keyup", e => {
 
 // ===================================
 
-let sIdx = null; const gKey = () => "td_records_" + curP.key;
+let sIdx = null; const gKey = () => "td_records_" + (trainMode ? trainMode : curP.key); // 训练模式单独存记录
 function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); renderHist(); }
 function setPen(i,p){ let r=safeLS.get(gKey()); if(r[i]){ r[i].penalty=p; safeLS.set(gKey(),r); renderHist(); } }
 function delRec(i){ let r=safeLS.get(gKey()); r.splice(i,1); sIdx=null; safeLS.set(gKey(),r); renderHist(); }

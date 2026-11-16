@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
-<script src="formulas.js"></script>
+<!-- 引入分离的数据文件 -->
+<script src="formulas_3x3.js"></script>
+<script src="formulas_2x2.js"></script>
+<!-- 引入外部 3D 库 -->
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
@@ -20,6 +23,8 @@ h1{text-align:center;margin:12px 0;font-size:24px}
 .tab{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
 .tab button{flex:1;padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:15px;cursor:pointer}
 .tab button.active{background:#333;color:#fff;border-color:#333}
+
+/* 动态模块与分类 Tab */
 .moduleTab{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 .moduleTab button{flex:1;padding:12px;border:1px solid #333;background:#fff;color:#333;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;transition:0.2s;min-width:100px;}
 .moduleTab button.active{background:#333;color:#fff;}
@@ -55,11 +60,13 @@ twisty-player{width:100%;height:100%}
 #statPanel{margin:12px 0;padding:10px;border:1px solid #ccc;border-radius:8px;text-align:center;line-height:1.6}
 #observeToggle{margin-bottom:8px;padding:6px 10px;cursor:pointer}
 .warn-text{color:#c82423;font-size:14px;margin-top:4px;text-align:center}
+
 .trainerPanel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:#f9f9f9;border-radius:8px;border:1px dashed #ccc;}
 .trainerPanel button{padding:8px 16px;font-size:14px;font-weight:bold;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;transition:all 0.2s;}
 .trainerPanel button:hover{background:#e0e0e0;}
 .trainerPanel button.active{background:#333;color:#fff;border-color:#333;}
 .trainerPanel button.stop-btn{border-color:#c82423;color:#c82423;display:none;}
+
 @media (max-width: 360px) {
   .tab button { padding: 6px; font-size: 13px; }
   #puzzleMainBtn { padding: 6px 10px; font-size: 13px; }
@@ -112,7 +119,6 @@ twisty-player{width:100%;height:100%}
         </div>
     </section>
 
-    <!-- 公式库页面容器（完全由 JS 动态生成） -->
     <section id="formula" class="page" style="display:none">
         <div class="trainerPanel">
             <button type="button" id="btnTrainOLL">🎯 训练三阶OLL</button>
@@ -128,6 +134,9 @@ twisty-player{width:100%;height:100%}
 
 <script>
 window.onerror = function(msg) { console.log("防崩捕获:", msg); return true; };
+
+// 将两个数据文件合并
+window.FormulaDB = Object.assign({}, window.FormulaDB_3x3, window.FormulaDB_2x2);
 
 const pList = [{key:"3x3x3",name:"三阶",eventId:"333"},{key:"2x2x2",name:"二阶",eventId:"222"},{key:"4x4x4",name:"四阶",eventId:"444"},{key:"pyraminx",name:"金字塔",eventId:"pyraminx"},{key:"skewb",name:"斜转",eventId:"skewb"}];
 const fData = {"333":["R U R' U R U2 R'","F R U R' U' F'"],"default":["R U R' U'"]};
@@ -172,7 +181,7 @@ async function genScr() {
         if (sCube) { sCube.setAttribute("puzzle", cubeType); sCube.setAttribute("alg", fullSetup); }
         return;
     }
-    // ... 普通打乱逻辑省略，与原版一致 ...
+    
     sText.textContent = "生成中..."; wMsg.textContent = "";
     let k = curP.puzzle || curP.key, fb = fData[curP.eventId] || fData.default;
     if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
@@ -184,7 +193,6 @@ async function genScr() {
 }
 function setS(str, fb) { curScr = str; sText.textContent = str; if (sCube) sCube.setAttribute("alg",str); wMsg.textContent = fb ? "⚠️ 降级：本地打乱" : ""; }
 
-// ---- 训练模式绑定 ----
 const btnTrainOLL = document.getElementById("btnTrainOLL"), btnTrainPLL = document.getElementById("btnTrainPLL"), btnTrain2x2 = document.getElementById("btnTrain2x2"), btnStopTrain = document.getElementById("btnStopTrain");
 function startTrain(p, c) {
     trainMode = [p, c];
@@ -209,7 +217,19 @@ btnStopTrain.onclick = () => {
     genScr();
 };
 
-// ... 计时器与历史记录逻辑（与原版完全一致）...
+const optNodes = document.querySelectorAll('.puzzleOption');
+optNodes.forEach((opt, i) => {
+    const p = pList[i];
+    opt.onclick = async () => {
+        curP = p; isDrop = false; dList.classList.remove("show"); mBtn.setAttribute("aria-expanded", "false"); mBtn.textContent = curP.name; optNodes.forEach((o, j) => o.classList.toggle("active", i === j));
+        if (trainMode) btnStopTrain.click(); 
+        else { await genScr(); renderHist(); }
+    };
+});
+mBtn.onclick = e => { e.stopPropagation(); isDrop = !isDrop; dList.classList.toggle("show", isDrop); };
+document.addEventListener("click", () => { if (isDrop) { isDrop = false; dList.classList.remove("show"); } });
+document.getElementById("newScrambleBtn").onclick = () => genScr();
+
 let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, oOn = false, isOver = false, pStT = 0, wasIdle = false;
 const tDom = document.getElementById("timeDisplay"), tWrap = document.getElementById("timerWrap"), tTip = document.getElementById("tipText");
 document.getElementById("observeToggle").onclick = e => { oOn = !oOn; e.target.textContent = oOn ? "✅ 已开启15s" : "开启 15s观察"; };
@@ -220,6 +240,7 @@ function stopT() { if (tState === "running") { saveRec(Date.now()-stT, curScr, i
 function startO() { clrT(); tState = "observe"; oStT = Date.now(); isOver = false; tDom.className = "observe"; tDom.textContent = "15"; tTip.textContent = "观察中"; oTimer = setInterval(() => { let el = Date.now()-oStT; if(el>=17000){ saveRec(0,curScr,"DNF"); reset(); return; } if(el>=15000){ isOver=true; tDom.textContent="0"; tTip.textContent="超15s +2"; } else tDom.textContent = Math.ceil((15000-el)/1000).toString(); }, 100); }
 function bPress() { clrT(); if(tState==="running"){ stopT(); return; } if(tState==="idle"||tState==="observe"){ pStT=Date.now(); tState="readyCount"; tDom.className="ready"; if(wasIdle) tDom.textContent="0.00"; rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); } }
 function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ if (h<800 && wasIdle && oOn) { reset(); startO(); } else { tState = "idle"; tDom.className = ""; tTip.textContent = "单击观察 / 长按预备"; } } }
+
 tWrap.addEventListener("touchstart", e => { e.preventDefault(); wasIdle = (tState === "idle"); bPress(); }, { passive: false });
 tWrap.addEventListener("touchend", e => { e.preventDefault(); if (tState !== "running") ePress(); }, { passive: false });
 tWrap.addEventListener("mousedown", e => { if (e.button !== 0) return; e.preventDefault(); wasIdle = (tState === "idle"); bPress(); });
@@ -233,6 +254,7 @@ function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,
 function setPen(i,p){ let r=safeLS.get(gKey()); if(r[i]){ r[i].penalty=p; safeLS.set(gKey(),r); renderHist(); } }
 function delRec(i){ let r=safeLS.get(gKey()); r.splice(i,1); sIdx=null; safeLS.set(gKey(),r); renderHist(); }
 function calcA(recs,n){ if(recs.length<n)return null; let v=recs.slice(0,n).map(r=>r.penalty==="DNF"?null:r.time+(r.penalty==="+2"?2000:0)); if(v.includes(null))return null; v.sort((a,b)=>a-b); return v.slice(1,-1).reduce((a,b)=>a+b,0)/(n-2); }
+
 function renderHist() {
     let r = safeLS.get(gKey()), box = document.getElementById("historyList"); while (box.firstChild) box.removeChild(box.firstChild);
     let bst = r.length ? Math.min(...r.filter(x=>x.penalty!=="DNF").map(x=>x.time+(x.penalty==="+2"?2000:0))) : null;
@@ -266,11 +288,10 @@ function renderHist() {
 document.getElementById("historyList").onclick = e => { let b=e.target.closest("button[data-act]"); if(!b)return; let i=parseInt(b.dataset.idx), a=b.dataset.act; if(a==="p2")setPen(i,"+2"); else if(a==="dnf")setPen(i,"DNF"); else if(a==="clear")setPen(i,""); else delRec(i); };
 document.getElementById("clearRecordsBtn").onclick = () => { if(confirm("清空当前记录？")){ safeLS.remove(gKey()); sIdx=null; renderHist(); } };
 
-// ---- 页面切换 ----
 document.querySelectorAll(".tab button").forEach(b => { b.onclick = () => { document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".page").forEach(p=>p.style.display="none"); document.getElementById(b.dataset.tab).style.display="block"; }; });
 
 // ==========================================
-// 核心修复：完全动态渲染所有公式库
+// 核心修复：完全动态渲染
 // ==========================================
 function buildFormulaUI() {
     const container = document.getElementById("dynamicFormulaUI");
@@ -278,36 +299,29 @@ function buildFormulaUI() {
     
     const moduleTab = document.createElement("div"); moduleTab.className = "moduleTab";
     const contentArea = document.createElement("div");
-    
-    const puzzleNames = { "3x3": "三阶公式库", "2x2": "二阶公式库", "4x4": "四阶公式库", "pyraminx": "金字塔公式库" };
+    const puzzleNames = { "3x3": "三阶公式库", "2x2": "二阶公式库" };
 
-    // 遍历所有项目
     Object.keys(window.FormulaDB).forEach((puzzleKey, idx) => {
-        // 1. 生成模块按钮
         let modBtn = document.createElement("button");
-        modBtn.type = "button";
-        modBtn.textContent = puzzleNames[puzzleKey] || (puzzleKey + " 公式库");
+        modBtn.type = "button"; modBtn.textContent = puzzleNames[puzzleKey] || (puzzleKey + " 公式库");
         if(idx === 0) modBtn.classList.add("active");
         
         let puzzleData = window.FormulaDB[puzzleKey];
         let puzzleDiv = document.createElement("div");
         puzzleDiv.style.display = idx === 0 ? "block" : "none";
         
-        // 2. 生成子分类 Tab
         let subTab = document.createElement("div"); subTab.className = "subTab";
         let subContentWrap = document.createElement("div");
         
-        const categories = Object.keys(puzzleData);
-        categories.forEach((catKey, catIdx) => {
+        Object.keys(puzzleData).forEach((catKey, catIdx) => {
             let subBtn = document.createElement("button");
             subBtn.type = "button"; subBtn.textContent = catKey;
             if(catIdx === 0) subBtn.classList.add("active");
             
             let listDiv = document.createElement("div");
             listDiv.style.display = catIdx === 0 ? "block" : "none";
-            listDiv.id = `list_${puzzleKey}_${catKey}`;
             
-            // 渲染这个分类下的所有公式
+            // 渲染公式列表
             renderFormulaList(puzzleData[catKey], listDiv, puzzleKey === "2x2" ? "2x2x2" : "3x3x3");
             
             subBtn.onclick = () => {
@@ -316,7 +330,6 @@ function buildFormulaUI() {
                 Array.from(subContentWrap.children).forEach(c => c.style.display = "none");
                 listDiv.style.display = "block";
             };
-            
             subTab.appendChild(subBtn);
             subContentWrap.appendChild(listDiv);
         });
@@ -348,18 +361,11 @@ function renderFormulaList(raw, containerDiv, puzzleType) {
         d.onclick = e => {
             if(e.target.tagName.toLowerCase()==="twisty-player") return; 
             let c = d.querySelector(".twistContainer");
-            if(d.dataset.open === "true"){ 
-                while(c.firstChild) c.removeChild(c.firstChild); 
-                d.dataset.open = "false"; 
-            } else {
-                // 关闭其他打开的
-                document.querySelectorAll(".formulaItem").forEach(el => { 
-                    let t = el.querySelector(".twistContainer"); 
-                    if(t) while(t.firstChild) t.removeChild(t.firstChild); 
-                    el.dataset.open = "false"; 
-                });
+            if(d.dataset.open === "true"){ while(c.firstChild) c.removeChild(c.firstChild); d.dataset.open = "false"; }
+            else {
+                document.querySelectorAll(".formulaItem").forEach(el => { let t = el.querySelector(".twistContainer"); if(t) while(t.firstChild) t.removeChild(t.firstChild); el.dataset.open = "false"; });
                 
-                // 清理公式中的整体转体（防 2x2 崩坏）
+                // 清理整体转体，防 2x2 渲染崩坏
                 let cleanAlg = alg.replace(/[xyz]\s*['2]?/gi, '').trim();
                 let s = "";
                 try { if(window.Alg) s = new window.Alg(cleanAlg).invert().toString(); } catch(e) { s = cleanAlg; }

@@ -23,9 +23,11 @@ h1{text-align:center;margin:12px 0;font-size:24px}
 .moduleTab{display:flex;gap:8px;margin-bottom:12px;}
 .moduleTab button{flex:1;padding:12px;border:1px solid #333;background:#fff;color:#333;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;transition:0.2s;}
 .moduleTab button.active{background:#333;color:#fff;}
-.subTab{display:flex;gap:4px;margin:12px 0}
-.subTab button{padding:8px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer}
-.subTab button.active{background:#444;color:#fff}
+
+/* 优化子分类标签，支持多个自动换行 */
+.subTab{display:flex;gap:4px;margin:12px 0;flex-wrap:wrap;}
+.subTab button{padding:8px 12px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;flex:1;min-width:60px;}
+.subTab button.active{background:#444;color:#fff;}
 
 #timerWrap{text-align:center;margin:20px 0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #timeDisplay{font-size:clamp(48px,15vw,72px);max-width:90vw;margin:10px auto;font-weight:bold;font-variant-numeric:tabular-nums}
@@ -128,15 +130,27 @@ twisty-player{width:100%;height:100%}
         </div>
 
         <div id="mod3x3">
-            <div class="subTab"><button type="button" data-sub="oll" class="active">OLL</button><button type="button" data-sub="pll">PLL</button></div>
+            <div class="subTab" id="sub3x3">
+                <button type="button" class="active">OLL</button>
+                <button type="button">PLL</button>
+            </div>
             <div id="t3_ollList"></div>
             <div id="t3_pllList" style="display:none"></div>
         </div>
 
         <div id="mod2x2" style="display:none">
-            <div class="subTab"><button type="button" data-sub="oll" class="active">二阶 OLL</button><button type="button" data-sub="pbl">二阶 PBL</button></div>
+            <div class="subTab" id="sub2x2">
+                <button type="button" class="active">OLL</button>
+                <button type="button">PBL</button>
+                <button type="button">CLL</button>
+                <button type="button">EG1</button>
+                <button type="button">EG2</button>
+            </div>
             <div id="t2_ollList"></div>
             <div id="t2_pblList" style="display:none"></div>
+            <div id="t2_cllList" style="display:none"></div>
+            <div id="t2_eg1List" style="display:none"></div>
+            <div id="t2_eg2List" style="display:none"></div>
         </div>
     </section>
 
@@ -146,9 +160,11 @@ twisty-player{width:100%;height:100%}
 <script>
 window.onerror = function(msg) { console.log("防崩捕获:", msg); return true; };
 
+// ================= 三阶数据 =================
 window.threeOll = [["OLL 1","R U R' U R U2 R'"],["OLL 2","R' U' R U' R' U2 R"],["OLL 3","F R U R' U' F'"],["OLL 4","f R U R' U' f'"],["OLL 5","F' L' U' L U F"],["OLL 6","f' L' U' L U f"],["OLL 7","R U2 R' U' R U' R'"],["OLL 8","L' U2 L U L' U L"],["OLL 9","R2 D' R U2 R' D R U2 R"],["OLL 10","L2 D L' U2 L D' L' U2 L'"],["OLL 11","r U R' U' r' F R F'"],["OLL 12","l' U' L U l F' L' F"],["OLL 13","F R U R' U' F' f R U R' U' f'"],["OLL 14","f' L' U' L U f F' L' U' L U F"],["OLL 15","r' U' l L' U' L U l' U l"],["OLL 16","r U r' R U R' U' r U' r'"],["OLL 17","U2 R U R' U R' F R F' U2 R' F R F'"],["OLL 18","U2 F U R U2 R' S' R U R' S F'"],["OLL 19","r' R U R U R' U' M' R' F R F'"],["OLL 20","r U R' U' M2 U R U' R' U' M'"],["OLL 21","R U2 R2 U' R2 U' R2 U2 R"],["OLL 22","L' U2 L2 U L2 U L2 U2 L'"],["OLL 23","U2 R2 D' R U2 R' D R U2 R"],["OLL 24","R' F' r U R U' r' F"],["OLL 25","F R' F' r U R U' r'"],["OLL 26","R' U' R U' R' U2 R"],["OLL 27","R' U2 R U R' U R"],["OLL 28","r U R' U' r' R U R U' R'"],["OLL 29","S' R U R' U' R' F R F' U S"],["OLL 30","U' F U R U2 R' U' R U2 R' U' F'"],["OLL 31","U F R' F' R U R U R' U' R U' R'"],["OLL 32","S R U R' U' R' F R f'"],["OLL 33","R U R' U' R' F R F'"],["OLL 34","U R U R2 U' R' F R U R U' F'"],["OLL 35","F R U R' U' F' U F R U R' U' F'"],["OLL 36","F' L' U' L U F U' F' L' U' L U F"],["OLL 37","F R U' R' U' R U R' F'"],["OLL 38","R U R' U R U' R' U' R' F R F'"],["OLL 39","L F' L' U' L U F U' L'"],["OLL 40","R' F R U R' U' F' U R"],["OLL 41","S U' R' F' U' F U R S'"],["OLL 42","S' F R U R' U' F' U S"],["OLL 43","U R' F U R U' R2 F' R2 U R' U' R"],["OLL 44","U2 F U R U' R' F'"],["OLL 45","F U R U' R' F'"],["OLL 46","F' U' L' U L F"],["OLL 47","U' F R' F' R U2 R U' R' U R U2 R'"],["OLL 48","F R U R' U' R U R' U' F'"],["OLL 49","U2 r U' r2 U r2 U r2 U' r"],["OLL 50","U2 r' U r2 U' r2 U' r2 U r'"],["OLL 51","U2 F U R U' R' U R U' R' F'"],["OLL 52","R' U' R U' R' U F' U F R"],["OLL 53","U' r' U2 R U R' U' R U R' U r"],["OLL 54","U' r U r' R U R' U' R U R' U' r U' r'"],["OLL 55","U R' F U R U' R2 F' R2 U R' U' R"],["OLL 56","r' U' r U' R' U R U' R' U R r' U r"],["OLL 57","U R U R' U' M' U R U' r'"]];
 window.threePll = [["Ua Perm","R U' R U R U R U' R' U' R2"],["Ub Perm","R2 U R U R' U' R' U' R' U R'"],["Z Perm","M2 U M2 U M' U2 M2 U2 M'"],["H Perm","M2 U M2 U2 M2 U M2"],["T Perm","R U R' U' R' F R2 U' R' U' R U R' F'"],["Y Perm","F R U' R' U' R U R' F' R U R' U' R' F R F'"],["Ja Perm","R' U L' U2 R U' R' U2 R L U'"],["Jb Perm","R U R' F' R U R' U' R' F R2 U' R'"],["Ga Perm","R2 u R' U R' U' R u' R2 y' R' U R"],["Gb Perm","R' U' R y R2 u R' U R U' R u' R2"],["Gc Perm","R2 u' R U' R U R' u R2 y R U' R'"],["Gd Perm","R U R' y' R2 u' R U' R' U R' u R2"],["Aa Perm","x' R2 D2 R' U' R D2 R' U R' x"],["Ab Perm","x R2 D2 R U R' D2 R U' R x'"],["Ra Perm","U R U' R' U' R U R D R' U' R D' R' U2 R'"],["Rb Perm","R' U2 R U2 R' F R U R' U' R' F' R2"],["V Perm","R' U R' U' R D' R' D R' U D' R2 U' R2 D R2"],["Na Perm","R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'"],["Nb Perm","R' U R U' R' F' U' F R U R' F R' F' R U' R"],["E Perm","x' R U' R' D R U R' D' R U R' D R U' R' D' x"],["F Perm","R' U' F' R U R' U' R' F R2 U' R' U' R U R' U R"]];
 
+// ================= 二阶数据 =================
 window.twoOll = [
     ["OLL 1 (Sune)", "R U R' U R U2 R'"],
     ["OLL 2 (Anti-Sune)", "R' U' R U' R' U2 R"],
@@ -165,6 +181,34 @@ window.twoPbl = [
     ["上邻角 / 下邻角", "R2 U' B2 U2 R2 U' R2"],
     ["上邻角 / 下对角", "R U' L U2 R' U R'"]
 ];
+// CLL (底层已对齐，直接复原顶面)
+window.twoCll = [
+    ["CLL 1 (Sune)", "R U R' U R U2 R'"],
+    ["CLL 2 (Anti-Sune)", "R U2 R' U' R U' R'"],
+    ["CLL 3 (H)", "R U R' U R U' R' U R U2 R'"],
+    ["CLL 4 (Pi)", "R U2 R2 U' R2 U' R2 U2 R"],
+    ["CLL 5 (T)", "R U R' U' R' F R F'"],
+    ["CLL 6 (U)", "F R U R' U' R U R' U' F'"],
+    ["CLL 7 (L)", "F R' F' r U R U' r'"]
+];
+// EG1 (底层一面，侧面一组对齐)
+window.twoEg1 = [
+    ["EG1 Sune - 1", "R U' R' U R U' R'"],
+    ["EG1 Sune - 2", "R U R' U' R U R'"],
+    ["EG1 Anti-Sune - 1", "R U R' U' R U R'"],
+    ["EG1 Anti-Sune - 2", "R' U R U' R' U R"],
+    ["EG1 H - 1", "R U R' U' R U R' U' R U R'"],
+    ["EG1 Pi - 1", "R U2 R' U' R U R' U' R U' R'"]
+];
+// EG2 (底层一面，侧面全未对齐)
+window.twoEg2 = [
+    ["EG2 Sune - 1", "R' U' R U' R' U2 R"],
+    ["EG2 Sune - 2", "R U R' U' R U R' U' R U R'"],
+    ["EG2 Anti-Sune - 1", "R U R' U R U2 R'"],
+    ["EG2 H - 1", "R2 U2 R U2 R2"],
+    ["EG2 Pi - 1", "R U2 R2 U' R2 U' R2 U2 R"]
+];
+
 
 const pList = [{key:"3x3x3",name:"三阶",eventId:"333"},{key:"2x2x2",name:"二阶",eventId:"222"},{key:"4x4x4",name:"四阶",eventId:"444"},{key:"pyraminx",name:"金字塔",eventId:"pyraminx"},{key:"skewb",name:"斜转",eventId:"skewb"}];
 const fData = {"333":["R U R' U R U2 R'","F R U R' U' F'"],"default":["R U R' U'"]};
@@ -378,18 +422,22 @@ document.querySelectorAll(".modBtn").forEach(b => {
     };
 });
 
-function setupSubTabs(containerId, list1Id, list2Id) {
-    const btns = document.querySelectorAll(`#${containerId} .subTab button`);
+// 升级版：支持任意数量的子分类 Tab
+function setupSubTabs(containerId, listIds) {
+    const btns = document.querySelectorAll(`#${containerId} button`);
     btns.forEach((b, idx) => {
         b.onclick = () => {
             btns.forEach(x => x.classList.remove("active")); b.classList.add("active");
-            document.getElementById(list1Id).style.display = idx === 0 ? "block" : "none";
-            document.getElementById(list2Id).style.display = idx === 1 ? "block" : "none";
+            listIds.forEach((id, i) => {
+                document.getElementById(id).style.display = (idx === i) ? "block" : "none";
+            });
         };
     });
 }
-setupSubTabs("mod3x3", "t3_ollList", "t3_pllList");
-setupSubTabs("mod2x2", "t2_ollList", "t2_pblList");
+// 三阶 2 个分类
+setupSubTabs("sub3x3", ["t3_ollList", "t3_pllList"]);
+// 二阶 5 个分类
+setupSubTabs("sub2x2", ["t2_ollList", "t2_pblList", "t2_cllList", "t2_eg1List", "t2_eg2List"]);
 
 function renderF(raw, id, puzzleType) {
     let w = document.getElementById(id); while (w.firstChild) w.removeChild(w.firstChild);
@@ -406,7 +454,6 @@ function renderF(raw, id, puzzleType) {
                 try { 
                     let tp=document.createElement("twisty-player"); 
                     tp.setAttribute("puzzle", puzzleType);
-                    // 核心修复：将实验性起点锚点设为 start，表示不播放逆公式过程，直接以它的结果作为起点
                     tp.setAttribute("experimental-setup-anchor", "start"); 
                     tp.setAttribute("experimental-setup-alg", s); 
                     tp.setAttribute("alg", alg); 
@@ -426,6 +473,9 @@ renderF(window.threeOll, "t3_ollList", "3x3x3");
 renderF(window.threePll, "t3_pllList", "3x3x3");
 renderF(window.twoOll, "t2_ollList", "2x2x2");
 renderF(window.twoPbl, "t2_pblList", "2x2x2");
+renderF(window.twoCll, "t2_cllList", "2x2x2");
+renderF(window.twoEg1, "t2_eg1List", "2x2x2");
+renderF(window.twoEg2, "t2_eg2List", "2x2x2");
 </script>
 </body>
 </html>

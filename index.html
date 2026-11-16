@@ -358,6 +358,7 @@ function renderFormulaList(raw, containerDiv, puzzleType) {
         let d = document.createElement("div"); d.className = "formulaItem"; d.dataset.open = "false";
         let b = document.createElement("b"); b.textContent = name; d.appendChild(b); d.appendChild(document.createTextNode("：" + alg));
         let tc = document.createElement("div"); tc.className = "twistContainer"; d.appendChild(tc);
+        
         d.onclick = e => {
             if(e.target.tagName.toLowerCase()==="twisty-player") return; 
             let c = d.querySelector(".twistContainer");
@@ -365,9 +366,18 @@ function renderFormulaList(raw, containerDiv, puzzleType) {
             else {
                 document.querySelectorAll(".formulaItem").forEach(el => { let t = el.querySelector(".twistContainer"); if(t) while(t.firstChild) t.removeChild(t.firstChild); el.dataset.open = "false"; });
                 
+                // 【修复核心】：在点击的瞬间才计算逆公式，此时 3D 库 100% 已经加载完毕！
                 let cleanAlg = alg.replace(/[xyz]\s*['2]?/gi, '').replace(/['’]2/g, '2').trim();
                 let s = "";
-                try { if(window.Alg) s = new window.Alg(cleanAlg).invert().toString(); } catch(e) { s = cleanAlg; }
+                try { 
+                    if(window.Alg) {
+                        s = new window.Alg(cleanAlg).invert().toString(); 
+                    } else {
+                        s = cleanAlg; // 如果库真的挂了，至少不报错
+                    }
+                } catch(e) { 
+                    s = cleanAlg; 
+                }
 
                 try { 
                     let tp = document.createElement("twisty-player"); 

@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
+<!-- 引入分离的数据文件 -->
 <script src="formulas_3x3.js"></script>
 <script src="formulas_2x2.js"></script>
+<!-- 引入外部 3D 库 -->
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
@@ -21,14 +23,12 @@ h1{text-align:center;margin:12px 0;font-size:24px}
 .tab{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
 .tab button{flex:1;padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:15px;cursor:pointer}
 .tab button.active{background:#333;color:#fff;border-color:#333}
-
 .moduleTab{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 .moduleTab button{flex:1;padding:12px;border:1px solid #333;background:#fff;color:#333;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;transition:0.2s;min-width:100px;}
 .moduleTab button.active{background:#333;color:#fff;}
 .subTab{display:flex;gap:4px;margin:12px 0;flex-wrap:wrap;}
 .subTab button{padding:8px 12px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;flex:1;min-width:60px;}
 .subTab button.active{background:#444;color:#fff;}
-
 #timerWrap{text-align:center;margin:20px 0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #timeDisplay{font-size:clamp(48px,15vw,72px);max-width:90vw;margin:10px auto;font-weight:bold;font-variant-numeric:tabular-nums}
 #timeDisplay.ready{color:#ffbb00}
@@ -114,7 +114,6 @@ twisty-player{width:100%;height:100%}
         </div>
     </section>
 
-    <!-- 公式库页面 -->
     <section id="formula" class="page" style="display:none">
         <div class="trainerPanel">
             <button type="button" id="btnTrainOLL">🎯 训练三阶OLL</button>
@@ -128,7 +127,6 @@ twisty-player{width:100%;height:100%}
             <button type="button" class="modBtn" data-mod="2x2">二阶公式库</button>
         </div>
 
-        <!-- 3x3 结构 -->
         <div id="mod3x3">
             <div class="subTab" id="sub3x3">
                 <button type="button" class="active">OLL</button>
@@ -138,7 +136,6 @@ twisty-player{width:100%;height:100%}
             <div id="t3_pllList" style="display:none"></div>
         </div>
 
-        <!-- 2x2 结构 -->
         <div id="mod2x2" style="display:none">
             <div class="subTab" id="sub2x2">
                 <button type="button" class="active">OLL</button>
@@ -188,6 +185,7 @@ async function genScr() {
         else if (trainMode === 'pll') pool = window.threePll;
         else if (trainMode === '2x2') { pool = window.twoOll; cubeType = "2x2x2"; }
         
+        if (!pool) return;
         let item = pool[Math.floor(Math.random() * pool.length)];
         currentTrainCase = item[0];
         let alg = item[1];
@@ -328,8 +326,20 @@ setupSubTabs("sub3x3", ["t3_ollList", "t3_pllList"]);
 setupSubTabs("sub2x2", ["t2_ollList", "t2_pblList", "t2_cllList", "t2_eg1List", "t2_eg2List"]);
 
 function renderF(raw, id, puzzleType) {
-    if(!raw) return;
-    let w = document.getElementById(id); while (w.firstChild) w.removeChild(w.firstChild);
+    let w = document.getElementById(id); 
+    if(!w) return;
+    while (w.firstChild) w.removeChild(w.firstChild);
+    
+    // 防崩保护：如果外部数据没加载出来，直接在页面上提示
+    if(!raw || raw.length === 0) {
+        let errDiv = document.createElement("div");
+        errDiv.style.color = "#c82423";
+        errDiv.style.padding = "10px";
+        errDiv.textContent = "⚠️ 公式数据未加载（请检查对应的 formulas js 文件内容是否有误）";
+        w.appendChild(errDiv);
+        return;
+    }
+
     raw.forEach(item => {
         let name=item[0], alg=item[1];
         let d = document.createElement("div"); d.className = "formulaItem"; d.dataset.open = "false";
@@ -365,14 +375,17 @@ function renderF(raw, id, puzzleType) {
     });
 }
 
-genScr(); renderHist(); 
-renderF(window.threeOll, "t3_ollList", "3x3x3");
-renderF(window.threePll, "t3_pllList", "3x3x3");
-renderF(window.twoOll, "t2_ollList", "2x2x2");
-renderF(window.twoPbl, "t2_pblList", "2x2x2");
-renderF(window.twoCll, "t2_cllList", "2x2x2");
-renderF(window.twoEg1, "t2_eg1List", "2x2x2");
-renderF(window.twoEg2, "t2_eg2List", "2x2x2");
+// 保证在所有外部 JS 都加载完毕后执行
+window.addEventListener('load', () => {
+    genScr(); renderHist(); 
+    renderF(window.threeOll, "t3_ollList", "3x3x3");
+    renderF(window.threePll, "t3_pllList", "3x3x3");
+    renderF(window.twoOll, "t2_ollList", "2x2x2");
+    renderF(window.twoPbl, "t2_pblList", "2x2x2");
+    renderF(window.twoCll, "t2_cllList", "2x2x2");
+    renderF(window.twoEg1, "t2_eg1List", "2x2x2");
+    renderF(window.twoEg2, "t2_eg2List", "2x2x2");
+});
 </script>
 </body>
 </html>

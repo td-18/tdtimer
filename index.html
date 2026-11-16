@@ -4,10 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
-<!-- 引入分离的数据文件 -->
 <script src="formulas_3x3.js"></script>
 <script src="formulas_2x2.js"></script>
-<!-- 引入外部 3D 库 -->
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
@@ -24,7 +22,6 @@ h1{text-align:center;margin:12px 0;font-size:24px}
 .tab button{flex:1;padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:15px;cursor:pointer}
 .tab button.active{background:#333;color:#fff;border-color:#333}
 
-/* 动态模块与分类 Tab */
 .moduleTab{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 .moduleTab button{flex:1;padding:12px;border:1px solid #333;background:#fff;color:#333;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;transition:0.2s;min-width:100px;}
 .moduleTab button.active{background:#333;color:#fff;}
@@ -60,13 +57,11 @@ twisty-player{width:100%;height:100%}
 #statPanel{margin:12px 0;padding:10px;border:1px solid #ccc;border-radius:8px;text-align:center;line-height:1.6}
 #observeToggle{margin-bottom:8px;padding:6px 10px;cursor:pointer}
 .warn-text{color:#c82423;font-size:14px;margin-top:4px;text-align:center}
-
 .trainerPanel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:#f9f9f9;border-radius:8px;border:1px dashed #ccc;}
 .trainerPanel button{padding:8px 16px;font-size:14px;font-weight:bold;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;transition:all 0.2s;}
 .trainerPanel button:hover{background:#e0e0e0;}
 .trainerPanel button.active{background:#333;color:#fff;border-color:#333;}
 .trainerPanel button.stop-btn{border-color:#c82423;color:#c82423;display:none;}
-
 @media (max-width: 360px) {
   .tab button { padding: 6px; font-size: 13px; }
   #puzzleMainBtn { padding: 6px 10px; font-size: 13px; }
@@ -119,6 +114,7 @@ twisty-player{width:100%;height:100%}
         </div>
     </section>
 
+    <!-- 公式库页面 -->
     <section id="formula" class="page" style="display:none">
         <div class="trainerPanel">
             <button type="button" id="btnTrainOLL">🎯 训练三阶OLL</button>
@@ -126,7 +122,37 @@ twisty-player{width:100%;height:100%}
             <button type="button" id="btnTrain2x2">🎯 训练二阶</button>
             <button type="button" id="btnStopTrain" class="stop-btn">🛑 停止训练</button>
         </div>
-        <div id="dynamicFormulaUI"></div>
+
+        <div class="moduleTab">
+            <button type="button" class="modBtn active" data-mod="3x3">三阶公式库</button>
+            <button type="button" class="modBtn" data-mod="2x2">二阶公式库</button>
+        </div>
+
+        <!-- 3x3 结构 -->
+        <div id="mod3x3">
+            <div class="subTab" id="sub3x3">
+                <button type="button" class="active">OLL</button>
+                <button type="button">PLL</button>
+            </div>
+            <div id="t3_ollList"></div>
+            <div id="t3_pllList" style="display:none"></div>
+        </div>
+
+        <!-- 2x2 结构 -->
+        <div id="mod2x2" style="display:none">
+            <div class="subTab" id="sub2x2">
+                <button type="button" class="active">OLL</button>
+                <button type="button">PBL</button>
+                <button type="button">CLL</button>
+                <button type="button">EG1</button>
+                <button type="button">EG2</button>
+            </div>
+            <div id="t2_ollList"></div>
+            <div id="t2_pblList" style="display:none"></div>
+            <div id="t2_cllList" style="display:none"></div>
+            <div id="t2_eg1List" style="display:none"></div>
+            <div id="t2_eg2List" style="display:none"></div>
+        </div>
     </section>
 
     <section id="bluetooth" class="page" style="display:none"><h3>蓝牙待开发</h3></section>
@@ -134,9 +160,6 @@ twisty-player{width:100%;height:100%}
 
 <script>
 window.onerror = function(msg) { console.log("防崩捕获:", msg); return true; };
-
-// 将两个数据文件合并
-window.FormulaDB = Object.assign({}, window.FormulaDB_3x3, window.FormulaDB_2x2);
 
 const pList = [{key:"3x3x3",name:"三阶",eventId:"333"},{key:"2x2x2",name:"二阶",eventId:"222"},{key:"4x4x4",name:"四阶",eventId:"444"},{key:"pyraminx",name:"金字塔",eventId:"pyraminx"},{key:"skewb",name:"斜转",eventId:"skewb"}];
 const fData = {"333":["R U R' U R U2 R'","F R U R' U' F'"],"default":["R U R' U'"]};
@@ -160,15 +183,20 @@ function getRandomAUF() { let aufs = ["", "U ", "U' ", "U2 "]; return aufs[Math.
 
 async function genScr() {
     if (trainMode) {
-        let pool = window.FormulaDB[trainMode[0]][trainMode[1]];
-        let cubeType = trainMode[0] === '2x2' ? "2x2x2" : "3x3x3";
+        let pool; let cubeType = "3x3x3";
+        if (trainMode === 'oll') pool = window.threeOll;
+        else if (trainMode === 'pll') pool = window.threePll;
+        else if (trainMode === '2x2') { pool = window.twoOll; cubeType = "2x2x2"; }
+        
         let item = pool[Math.floor(Math.random() * pool.length)];
         currentTrainCase = item[0];
         let alg = item[1];
+        
         let setupStr = "";
         try { setupStr = new window.Alg(alg).invert().toString(); } catch(e) { setupStr = alg; }
-        let aufPre = (trainMode[0] === '3x3') ? getRandomAUF() : "";
-        let aufPost = (trainMode[0] === '3x3') ? getRandomAUF() : "";
+        
+        let aufPre = (trainMode === 'oll' || trainMode === 'pll') ? getRandomAUF() : "";
+        let aufPost = (trainMode === 'oll' || trainMode === 'pll') ? getRandomAUF() : "";
         let fullSetup = (aufPre + setupStr + " " + aufPost).trim();
 
         curScr = fullSetup;
@@ -181,7 +209,7 @@ async function genScr() {
         if (sCube) { sCube.setAttribute("puzzle", cubeType); sCube.setAttribute("alg", fullSetup); }
         return;
     }
-    
+
     sText.textContent = "生成中..."; wMsg.textContent = "";
     let k = curP.puzzle || curP.key, fb = fData[curP.eventId] || fData.default;
     if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
@@ -194,11 +222,11 @@ async function genScr() {
 function setS(str, fb) { curScr = str; sText.textContent = str; if (sCube) sCube.setAttribute("alg",str); wMsg.textContent = fb ? "⚠️ 降级：本地打乱" : ""; }
 
 const btnTrainOLL = document.getElementById("btnTrainOLL"), btnTrainPLL = document.getElementById("btnTrainPLL"), btnTrain2x2 = document.getElementById("btnTrain2x2"), btnStopTrain = document.getElementById("btnStopTrain");
-function startTrain(p, c) {
-    trainMode = [p, c];
-    btnTrainOLL.classList.toggle("active", p==='3x3' && c==='OLL');
-    btnTrainPLL.classList.toggle("active", p==='3x3' && c==='PLL');
-    btnTrain2x2.classList.toggle("active", p==='2x2');
+function startTrain(mode) {
+    trainMode = mode;
+    btnTrainOLL.classList.toggle("active", mode === 'oll');
+    btnTrainPLL.classList.toggle("active", mode === 'pll');
+    btnTrain2x2.classList.toggle("active", mode === '2x2');
     btnStopTrain.style.display = "inline-block";
     document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active")); 
     document.querySelector('[data-tab="timer"]').classList.add("active");
@@ -206,9 +234,9 @@ function startTrain(p, c) {
     document.getElementById("timer").style.display="block";
     genScr();
 }
-btnTrainOLL.onclick = () => startTrain('3x3', 'OLL');
-btnTrainPLL.onclick = () => startTrain('3x3', 'PLL');
-btnTrain2x2.onclick = () => startTrain('2x2', 'OLL');
+btnTrainOLL.onclick = () => startTrain('oll');
+btnTrainPLL.onclick = () => startTrain('pll');
+btnTrain2x2.onclick = () => startTrain('2x2');
 btnStopTrain.onclick = () => {
     trainMode = null; currentTrainCase = "";
     btnTrainOLL.classList.remove("active"); btnTrainPLL.classList.remove("active"); btnTrain2x2.classList.remove("active");
@@ -249,7 +277,7 @@ document.addEventListener("keydown", e => { if (e.code === "Space") { e.preventD
 document.addEventListener("keyup", e => { if (e.code === "Space") { e.preventDefault(); if (tState !== "running") ePress(); } });
 
 let sIdx = null; 
-const gKey = () => "td_records_" + (trainMode ? trainMode.join('_') : curP.key); 
+const gKey = () => "td_records_" + (trainMode ? trainMode : curP.key); 
 function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); renderHist(); }
 function setPen(i,p){ let r=safeLS.get(gKey()); if(r[i]){ r[i].penalty=p; safeLS.set(gKey(),r); renderHist(); } }
 function delRec(i){ let r=safeLS.get(gKey()); r.splice(i,1); sIdx=null; safeLS.set(gKey(),r); renderHist(); }
@@ -260,6 +288,7 @@ function renderHist() {
     let bst = r.length ? Math.min(...r.filter(x=>x.penalty!=="DNF").map(x=>x.time+(x.penalty==="+2"?2000:0))) : null;
     ["mo3","ao5","ao12"].forEach((id,i)=>{ let v=calcA(r,i*2+3); document.getElementById(id).textContent = v ? (v/1000).toFixed(2) : "—"; });
     document.getElementById("bestSingle").textContent = isFinite(bst) ? (bst/1000).toFixed(2) : "—";
+    
     r.forEach((x,i)=>{
         let d = document.createElement("div"); d.className = "history-item" + (sIdx===i ? " selected" : "");
         let ts = document.createElement("span"); ts.className = "history-time";
@@ -273,6 +302,7 @@ function renderHist() {
         d.appendChild(ts); d.appendChild(ds);
         d.onclick = () => { sIdx = sIdx===i ? null : i; renderHist(); };
         box.appendChild(d);
+        
         if(sIdx === i) {
             let p = document.createElement("div"); p.className = "penalty-panel";
             let sd = document.createElement("div"); sd.textContent = "打乱：" + x.scramble;
@@ -289,89 +319,37 @@ document.getElementById("historyList").onclick = e => { let b=e.target.closest("
 document.getElementById("clearRecordsBtn").onclick = () => { if(confirm("清空当前记录？")){ safeLS.remove(gKey()); sIdx=null; renderHist(); } };
 
 document.querySelectorAll(".tab button").forEach(b => { b.onclick = () => { document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".page").forEach(p=>p.style.display="none"); document.getElementById(b.dataset.tab).style.display="block"; }; });
-
-// ==========================================
-// 核心修复：完全动态渲染
-// ==========================================
-function buildFormulaUI() {
-    const container = document.getElementById("dynamicFormulaUI");
-    while (container.firstChild) container.removeChild(container.firstChild);
-    
-    const moduleTab = document.createElement("div"); moduleTab.className = "moduleTab";
-    const contentArea = document.createElement("div");
-    const puzzleNames = { "3x3": "三阶公式库", "2x2": "二阶公式库" };
-
-    Object.keys(window.FormulaDB).forEach((puzzleKey, idx) => {
-        let modBtn = document.createElement("button");
-        modBtn.type = "button"; modBtn.textContent = puzzleNames[puzzleKey] || (puzzleKey + " 公式库");
-        if(idx === 0) modBtn.classList.add("active");
-        
-        let puzzleData = window.FormulaDB[puzzleKey];
-        let puzzleDiv = document.createElement("div");
-        puzzleDiv.style.display = idx === 0 ? "block" : "none";
-        
-        let subTab = document.createElement("div"); subTab.className = "subTab";
-        let subContentWrap = document.createElement("div");
-        
-        Object.keys(puzzleData).forEach((catKey, catIdx) => {
-            let subBtn = document.createElement("button");
-            subBtn.type = "button"; subBtn.textContent = catKey;
-            if(catIdx === 0) subBtn.classList.add("active");
-            
-            let listDiv = document.createElement("div");
-            listDiv.style.display = catIdx === 0 ? "block" : "none";
-            
-            // 渲染公式列表
-            renderFormulaList(puzzleData[catKey], listDiv, puzzleKey === "2x2" ? "2x2x2" : "3x3x3");
-            
-            subBtn.onclick = () => {
-                Array.from(subTab.children).forEach(c => c.classList.remove("active"));
-                subBtn.classList.add("active");
-                Array.from(subContentWrap.children).forEach(c => c.style.display = "none");
-                listDiv.style.display = "block";
-            };
-            subTab.appendChild(subBtn);
-            subContentWrap.appendChild(listDiv);
-        });
-        
-        puzzleDiv.appendChild(subTab);
-        puzzleDiv.appendChild(subContentWrap);
-        
-        modBtn.onclick = () => {
-            Array.from(moduleTab.children).forEach(c => c.classList.remove("active"));
-            modBtn.classList.add("active");
-            Array.from(contentArea.children).forEach(c => c.style.display = "none");
-            puzzleDiv.style.display = "block";
-        };
-        
-        moduleTab.appendChild(modBtn);
-        contentArea.appendChild(puzzleDiv);
-    });
-
-    container.appendChild(moduleTab);
-    container.appendChild(contentArea);
+document.querySelectorAll(".modBtn").forEach(b => { b.onclick = () => { document.querySelectorAll(".modBtn").forEach(x => x.classList.remove("active")); b.classList.add("active"); document.getElementById("mod3x3").style.display = b.dataset.mod === "3x3" ? "block" : "none"; document.getElementById("mod2x2").style.display = b.dataset.mod === "2x2" ? "block" : "none"; }; });
+function setupSubTabs(containerId, listIds) {
+    const btns = document.querySelectorAll(`#${containerId} button`);
+    btns.forEach((b, idx) => { b.onclick = () => { btns.forEach(x => x.classList.remove("active")); b.classList.add("active"); listIds.forEach((id, i) => { document.getElementById(id).style.display = (idx === i) ? "block" : "none"; }); }; });
 }
+setupSubTabs("sub3x3", ["t3_ollList", "t3_pllList"]);
+setupSubTabs("sub2x2", ["t2_ollList", "t2_pblList", "t2_cllList", "t2_eg1List", "t2_eg2List"]);
 
-function renderFormulaList(raw, containerDiv, puzzleType) {
+function renderF(raw, id, puzzleType) {
+    if(!raw) return;
+    let w = document.getElementById(id); while (w.firstChild) w.removeChild(w.firstChild);
     raw.forEach(item => {
-        let name = item[0], alg = item[1];
+        let name=item[0], alg=item[1];
         let d = document.createElement("div"); d.className = "formulaItem"; d.dataset.open = "false";
         let b = document.createElement("b"); b.textContent = name; d.appendChild(b); d.appendChild(document.createTextNode("：" + alg));
         let tc = document.createElement("div"); tc.className = "twistContainer"; d.appendChild(tc);
+        
         d.onclick = e => {
             if(e.target.tagName.toLowerCase()==="twisty-player") return; 
-            let c = d.querySelector(".twistContainer");
-            if(d.dataset.open === "true"){ while(c.firstChild) c.removeChild(c.firstChild); d.dataset.open = "false"; }
+            let c=d.querySelector(".twistContainer");
+            if(d.dataset.open==="true"){ while(c.firstChild) c.removeChild(c.firstChild); d.dataset.open="false"; }
             else {
-                document.querySelectorAll(".formulaItem").forEach(el => { let t = el.querySelector(".twistContainer"); if(t) while(t.firstChild) t.removeChild(t.firstChild); el.dataset.open = "false"; });
+                document.querySelectorAll(".formulaItem").forEach(el => { let t=el.querySelector(".twistContainer"); if(t) while(t.firstChild) t.removeChild(t.firstChild); el.dataset.open="false"; });
                 
-                // 清理整体转体，防 2x2 渲染崩坏
-                let cleanAlg = alg.replace(/[xyz]\s*['2]?/gi, '').trim();
+                // 清理转体及特殊符号
+                let cleanAlg = alg.replace(/[xyz]\s*['2]?/gi, '').replace(/['’]2/g, '2').trim();
                 let s = "";
                 try { if(window.Alg) s = new window.Alg(cleanAlg).invert().toString(); } catch(e) { s = cleanAlg; }
 
                 try { 
-                    let tp = document.createElement("twisty-player"); 
+                    let tp=document.createElement("twisty-player"); 
                     tp.setAttribute("puzzle", puzzleType);
                     tp.setAttribute("experimental-setup-alg", s);
                     tp.setAttribute("experimental-setup-anchor", "end");
@@ -383,13 +361,18 @@ function renderFormulaList(raw, containerDiv, puzzleType) {
                 d.dataset.open = "true";
             }
         };
-        containerDiv.appendChild(d);
+        w.appendChild(d);
     });
 }
 
-// 初始化执行
-buildFormulaUI();
-genScr(); renderHist();
+genScr(); renderHist(); 
+renderF(window.threeOll, "t3_ollList", "3x3x3");
+renderF(window.threePll, "t3_pllList", "3x3x3");
+renderF(window.twoOll, "t2_ollList", "2x2x2");
+renderF(window.twoPbl, "t2_pblList", "2x2x2");
+renderF(window.twoCll, "t2_cllList", "2x2x2");
+renderF(window.twoEg1, "t2_eg1List", "2x2x2");
+renderF(window.twoEg2, "t2_eg2List", "2x2x2");
 </script>
 </body>
 </html>

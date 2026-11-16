@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
-<!-- 只引入这一个公式文件 -->
+<!-- 引入公式数据文件 -->
 <script src="formulas.js"></script>
 <!-- 引入 3D 渲染引擎 -->
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
@@ -366,24 +366,15 @@ function renderFormulaList(raw, containerDiv, puzzleType) {
             else {
                 document.querySelectorAll(".formulaItem").forEach(el => { let t = el.querySelector(".twistContainer"); if(t) while(t.firstChild) t.removeChild(t.firstChild); el.dataset.open = "false"; });
                 
-                // 【修复核心】：在点击的瞬间才计算逆公式，此时 3D 库 100% 已经加载完毕！
                 let cleanAlg = alg.replace(/[xyz]\s*['2]?/gi, '').replace(/['’]2/g, '2').trim();
                 let s = "";
-                try { 
-                    if(window.Alg) {
-                        s = new window.Alg(cleanAlg).invert().toString(); 
-                    } else {
-                        s = cleanAlg; // 如果库真的挂了，至少不报错
-                    }
-                } catch(e) { 
-                    s = cleanAlg; 
-                }
+                try { if(window.Alg) s = new window.Alg(cleanAlg).invert().toString(); } catch(e) { s = cleanAlg; }
 
                 try { 
                     let tp = document.createElement("twisty-player"); 
                     tp.setAttribute("puzzle", puzzleType);
                     tp.setAttribute("experimental-setup-alg", s);
-                    tp.setAttribute("experimental-setup-anchor", "end");
+                    // 核心修复：删除 anchor="end"，让它默认按照标准的逆 case 渲染！
                     tp.setAttribute("alg", cleanAlg);
                     tp.setAttribute("control-panel","playback"); 
                     tp.setAttribute("autoplay","false"); 

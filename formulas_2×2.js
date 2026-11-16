@@ -1,88 +1,9 @@
-// formulas_2x2.js - 根据 CubeRoot 截图完全核对版
-window.FormulaDB_2x2 = {
-    "2x2": {
-        "OLL": [
-            ["OLL 1 (Sune)", "R U R' U R U2 R'"], 
-            ["OLL 2 (Anti-Sune)", "R' U' R U' R' U2 R"],
-            ["OLL 3 (Pi)", "R U2 R2 U' R2 U' R2 U2 R"], 
-            ["OLL 4 (Headlights)", "F R U R' U' F'"],
-            ["OLL 5 (T)", "R U R' U' R' F R F'"], 
-            ["OLL 6 (U)", "F R U R' U' R U R' U' F'"],
-            ["OLL 7 (L)", "F R' F' R U R U' R'"]
-        ],
-        "PBL": [
-            ["Adj (邻角)", "R U2 R' U' R U2 R' F R' F' R U'"],
-            ["Adj Adj (双邻角)", "R2 U F2 U2 R2 U R2"],
-            ["Adj Opp (邻对)", "R' F R' F2 R U' R U2"],
-            ["Opp (对角)", "F R' F' R U R U' R' F R F' R U R' U' R'"],
-            ["Opp Adj (对邻)", "R2 U R2 U' R2 U R2 U' R2"],
-            ["Opp Opp (双对角)", "R2 F2 R2"]
-        ],
-        "CLL": [
-            ["CLL 1 (H)", "R2 U2 R U2 R2"],
-            ["CLL 2 (Pi)", "R U2 R2 U' R2 U' R2 U2 R"],
-            ["CLL 3 (U)", "F R U R' U' F'"],
-            ["CLL 4 (T)", "R U R' U' R' F R F'"],
-            ["CLL 5 (L)", "F R' F' R U R U' R'"],
-            ["CLL 6 (S)", "R U R' U R U2 R'"],
-            ["CLL 7 (AS)", "R U2 R' U' R U' R'"]
-        ],
-        "EG1": [
-            ["EG1 H 1", "R' F R2 U' R2 F' U' R"], ["EG1 H 2", "F' U R U' R2 F2 R U' F"],
-            ["EG1 H 3", "R' U' R' F2 U' F' R' F' U F R U2 R' F'"], ["EG1 H 4", "R U R' F' R U R' U' R U R'"],
-            ["EG1 H 5", "R U R' F' R U R' U' R U R'"], ["EG1 H 6", "R' F R2 U' R2 F' U' R"],
-            
-            ["EG1 Pi 1", "R2 B2 R' U' R U' R' U R U' R2"], ["EG1 Pi 2", "R' F R2 U' R2 F R U' R' U' R"],
-            ["EG1 Pi 3", "R U' R' F2 U' R U R' U R U' F2"], ["EG1 Pi 4", "R U R' U' R' F R2 U' R' U' R U R' F'"],
-            ["EG1 Pi 5", "R2 B2 R' U' R U' R' U R U' R2"], ["EG1 Pi 6", "R' F R2 U' R2 F R U' R' U' R"],
-            
-            ["EG1 U 1", "R U' R2 F R2 U' R2 U' L' U2 L2 U L"], ["EG1 U 2", "R U R' U R U' R' U R U2 R'"],
-            ["EG1 U 3", "R' F R F' R U2 R' U' R U' R'"], ["EG1 U 4", "R U2 R' U' R U R' U' R U' R'"],
-            ["EG1 U 5", "R' U' R U' R' U2 R"], ["EG1 U 6", "R U R' U R U2 R'"],
-            
-            ["EG1 T 1", "F R U' R2 F R U R' F R"], ["EG1 T 2", "F' R F R2 U' R' U' R U R' U R"],
-            ["EG1 T 3", "R U R' U' R' F R2 U' R' U' R U R' F'"], ["EG1 T 4", "R U R' U' R' F R F'"],
-            ["EG1 T 5", "R U R' U' R' F R F'"], ["EG1 T 6", "R' F R U R' U' F' R"],
-            
-            ["EG1 L 1", "R U' R' U R' U R2 F R F'"], ["EG1 L 2", "R' F R U R' U' R U R' F'"],
-            ["EG1 L 3", "R U R' U' R' F R F' R U R'"], ["EG1 L 4", "F R U R' U' F' R U R'"],
-            ["EG1 L 5", "R' F R U R' U' F' R"], ["EG1 L 6", "F' R U R' U' R' F R"],
-            
-            ["EG1 S 1", "B' U' L2 F2 U' F' U R U' R U"], ["EG1 S 2", "R U R' U R U2 R'"],
-            ["EG1 S 3", "R' U' R U' R' U2 R"], ["EG1 S 4", "R' U2 R U R' U R"],
-            ["EG1 S 5", "U2 R U R' U R U2 R'"], ["EG1 S 6", "U2 R' U' R U' R' U2 R"],
-            
-            ["EG1 AS 1", "B U' R2 F2 U' F U2 R' F R2 U' R' U"], ["EG1 AS 2", "R' U' R F2 U R U' R' U' R U F2"],
-            ["EG1 AS 3", "R U' R' F2 U' R U R' U R U' F2"], ["EG1 AS 4", "R' F R F' R U2 R' U' R U' R'"]
-        ],
-        "EG2": [
-            ["EG2 H 1", "R2 F U2 F2 R2 F2 R2"], ["EG2 H 2", "R2 U2 R U2 B2 R2"],
-            ["EG2 H 3", "R' U' R U2 R2 F' R U' F R"], ["EG2 H 4", "R U2 R' F2 U2 R U' R'"],
-            ["EG2 H 5", "R2 U2 R U2 B2 R2"],
-            
-            ["EG2 Pi 1", "F U' R U2 R U' R' U R' F'"], ["EG2 Pi 2", "R U2 R2 U' R2 U' R' U2 F R F'"],
-            ["EG2 Pi 3", "R' F R U' R' F R2 U' R' U' R U R' F'"], ["EG2 Pi 4", "R' F R U' R' F R2 U' R' U' R U R' F'"],
-            ["EG2 Pi 5", "R U2 R' U' R U' R2 U2 R F2 R2"], ["EG2 Pi 6", "R' F R2 U' R2 F2 R"],
-            
-            ["EG2 U 1", "R' U' R U' F U' R U' R2 U2 R2"], ["EG2 U 2", "F R U R' U' F' R U R'"],
-            ["EG2 U 3", "R U' R' U R U' R' B2 R2 B2"], ["EG2 U 4", "R2 F2 R U R U2 R2 F R F'"],
-            ["EG2 U 5", "R U' R' U R U' R' U R' U' R U R'"], ["EG2 U 6", "L' U' L U2 L' U' L U2 L' U' L"],
-            
-            ["EG2 T 1", "F R F' R U R' U' R B2 R2"], ["EG2 T 2", "R U R' U' R' F R F' R B2 R2"],
-            ["EG2 T 3", "R' U' R U' R' U2 R U2 R2 F2 R2 F'"], ["EG2 T 4", "R2 F2 R U R U2 R2 F R F'"],
-            ["EG2 T 5", "R' U R U2 R2 F R F' R U R' F'"], ["EG2 T 6", "R' U2 R U2 R2 F2 R F2 R"],
-            
-            ["EG2 L 1", "R2 B2 R2 F R' F' R U R' U'"], ["EG2 L 2", "R2 B2 R2 F' U' R U R U' R' F"],
-            ["EG2 L 3", "R U' R' U F2 U' R U R' U R U' F2"], ["EG2 L 4", "R U' R U R' U' R U R' U' R U R'"],
-            ["EG2 L 5", "F R' F' R U R U' R2 U R U' R' F'"], ["EG2 L 6", "F' R U R' U' R' F R F' R U R' U' R' F R"],
-            
-            ["EG2 S 1", "F U' R2 U' R' U2 R U' R2 F'"], ["EG2 S 2", "R U R' U R U2 R'"],
-            ["EG2 S 3", "R' U' R U' R' U2 R"], ["EG2 S 4", "R' U2 R U R' U R"],
-            ["EG2 S 5", "U2 R U R' U R U2 R'"], ["EG2 S 6", "U2 R' U' R U' R' U2 R"],
-            
-            ["EG2 AS 1", "R' U R U' R2 F R F' R U R' U' R' F2 R2"], ["EG2 AS 2", "R' U R U' R' F R' F' R U R U' R'"],
-            ["EG2 AS 3", "R' F R F' R U R' U' R' F2 R2"], ["EG2 AS 4", "R' U' R F2 U R U' R' U' R U F2"],
-            ["EG2 AS 5", "R' F R2 U' R2 F2 R"], ["EG2 AS 6", "R2 F2 R F R F' R U R' U' R'"]
-        ]
-    }
-};
+window.twoOll = [["OLL 1 (Sune)","R U R' U R U2 R'"],["OLL 2 (Anti-Sune)","R' U' R U' R' U2 R"],["OLL 3 (Pi)","R U2 R2 U' R2 U' R2 U2 R"],["OLL 4 (Headlights)","F R U R' U' F'"],["OLL 5 (T)","R U R' U' R' F R F'"],["OLL 6 (U)","F R U R' U' R U R' U' F'"],["OLL 7 (L)","F R' F' R U R U' R'"]];
+
+window.twoPbl = [["Adj (邻角)","R U2 R' U' R U2 R' F R' F' R U'"],["Adj Adj (双邻角)","R2 U F2 U2 R2 U R2"],["Adj Opp (邻对)","R' F R' F2 R U' R U2"],["Opp (对角)","F R' F' R U R U' R' F R F' R U R' U' R'"],["Opp Adj (对邻)","R2 U R2 U' R2 U R2 U' R2"],["Opp Opp (双对角)","R2 F2 R2"]];
+
+window.twoCll = [["CLL 1 (H)","R2 U2 R U2 R2"],["CLL 2 (Pi)","R U2 R2 U' R2 U' R2 U2 R"],["CLL 3 (U)","F R U R' U' F'"],["CLL 4 (T)","R U R' U' R' F R F'"],["CLL 5 (L)","F R' F' R U R U' R'"],["CLL 6 (S)","R U R' U R U2 R'"],["CLL 7 (AS)","R U2 R' U' R U' R'"]];
+
+window.twoEg1 = [["EG1 H 1","R' F R2 U' R2 F' U' R"],["EG1 H 2","F' U R U' R2 F2 R U' F"],["EG1 H 3","R' U' R' F2 U' F' R' F' U F R U2 R' F'"],["EG1 H 4","R U R' F' R U R' U' R U R'"],["EG1 H 5","R U R' F' R U R' U' R U R'"],["EG1 H 6","R' F R2 U' R2 F' U' R"],["EG1 Pi 1","R2 B2 R' U' R U' R' U R U' R2"],["EG1 Pi 2","R' F R2 U' R2 F R U' R' U' R"],["EG1 Pi 3","R U' R' F2 U' R U R' U R U' F2"],["EG1 Pi 4","R U R' U' R' F R2 U' R' U' R U R' F'"],["EG1 Pi 5","R2 B2 R' U' R U' R' U R U' R2"],["EG1 Pi 6","R' F R2 U' R2 F R U' R' U' R"],["EG1 U 1","R U' R2 F R2 U' R2 U' L' U2 L2 U L"],["EG1 U 2","R U R' U R U' R' U R U2 R'"],["EG1 U 3","R' F R F' R U2 R' U' R U' R'"],["EG1 U 4","R U2 R' U' R U R' U' R U' R'"],["EG1 U 5","R' U' R U' R' U2 R"],["EG1 U 6","R U R' U R U2 R'"],["EG1 T 1","F R U' R2 F R U R' F R"],["EG1 T 2","F' R F R2 U' R' U' R U R' U R"],["EG1 T 3","R U R' U' R' F R2 U' R' U' R U R' F'"],["EG1 T 4","R U R' U' R' F R F'"],["EG1 T 5","R U R' U' R' F R F'"],["EG1 T 6","R' F R U R' U' F' R"],["EG1 L 1","R U' R' U R' U R2 F R F'"],["EG1 L 2","R' F R U R' U' R U R' F'"],["EG1 L 3","R U R' U' R' F R F' R U R'"],["EG1 L 4","F R U R' U' F' R U R'"],["EG1 L 5","R' F R U R' U' F' R"],["EG1 L 6","F' R U R' U' R' F R"],["EG1 S 1","B' U' L2 F2 U' F' U R U' R U"],["EG1 S 2","R U R' U R U2 R'"],["EG1 S 3","R' U' R U' R' U2 R"],["EG1 S 4","R' U2 R U R' U R"],["EG1 S 5","U2 R U R' U R U2 R'"],["EG1 S 6","U2 R' U' R U' R' U2 R"],["EG1 AS 1","B U' R2 F2 U' F U2 R' F R2 U' R' U"],["EG1 AS 2","R' U' R F2 U R U' R' U' R U F2"],["EG1 AS 3","R U' R' F2 U' R U R' U R U' F2"],["EG1 AS 4","R' F R F' R U2 R' U' R U' R'"]];
+
+window.twoEg2 = [["EG2 H 1","R2 F U2 F2 R2 F2 R2"],["EG2 H 2","R2 U2 R U2 B2 R2"],["EG2 H 3","R' U' R U2 R2 F' R U' F R"],["EG2 H 4","R U2 R' F2 U2 R U' R'"],["EG2 H 5","R2 U2 R U2 B2 R2"],["EG2 Pi 1","F U' R U2 R U' R' U R' F'"],["EG2 Pi 2","R U2 R2 U' R2 U' R' U2 F R F'"],["EG2 Pi 3","R' F R U' R' F R2 U' R' U' R U R' F'"],["EG2 Pi 4","R' F R U' R' F R2 U' R' U' R U R' F'"],["EG2 Pi 5","R U2 R' U' R U' R2 U2 R F2 R2"],["EG2 Pi 6","R' F R2 U' R2 F2 R"],["EG2 U 1","R' U' R U' F U' R U' R2 U2 R2"],["EG2 U 2","F R U R' U' F' R U R'"],["EG2 U 3","R U' R' U R U' R' B2 R2 B2"],["EG2 U 4","R2 F2 R U R U2 R2 F R F'"],["EG2 U 5","R U' R' U R U' R' U R' U' R U R'"],["EG2 U 6","L' U' L U2 L' U' L U2 L' U' L"],["EG2 T 1","F R F' R U R' U' R B2 R2"],["EG2 T 2","R U R' U' R' F R F' R B2 R2"],["EG2 T 3","R' U' R U' R' U2 R U2 R2 F2 R2 F'"],["EG2 T 4","R2 F2 R U R U2 R2 F R F'"],["EG2 T 5","R' U R U2 R2 F R F' R U R' F'"],["EG2 T 6","R' U2 R U2 R2 F2 R F2 R"],["EG2 L 1","R2 B2 R2 F R' F' R U R' U'"],["EG2 L 2","R2 B2 R2 F' U' R U R U' R' F"],["EG2 L 3","R U' R' U F2 U' R U R' U R U' F2"],["EG2 L 4","R U' R U R' U' R U R' U' R U R'"],["EG2 L 5","F R' F' R U R U' R2 U R U' R' F'"],["EG2 L 6","F' R U R' U' R' F R F' R U R' U' R' F R"],["EG2 S 1","F U' R2 U' R' U2 R U' R2 F'"],["EG2 S 2","R U R' U R U2 R'"],["EG2 S 3","R' U' R U' R' U2 R"],["EG2 S 4","R' U2 R U R' U R"],["EG2 S 5","U2 R U R' U R U2 R'"],["EG2 S 6","U2 R' U' R U' R' U2 R"],["EG2 AS 1","R' U R U' R2 F R F' R U R' U' R' F2 R2"],["EG2 AS 2","R' U R U' R' F R' F' R U R U' R'"],["EG2 AS 3","R' F R F' R U R' U' R' F2 R2"],["EG2 AS 4","R' U' R F2 U R U' R' U' R U F2"],["EG2 AS 5","R' F R2 U' R2 F2 R"],["EG2 AS 6","R2 F2 R F R F' R U R' U' R'"]];

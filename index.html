@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
-<!-- 引入外部公式数据文件 -->
 <script src="formulas.js"></script>
-<!-- 引入 3D 渲染引擎 -->
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
@@ -22,14 +20,12 @@ h1{text-align:center;margin:12px 0;font-size:24px}
 .tab{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
 .tab button{flex:1;padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:15px;cursor:pointer}
 .tab button.active{background:#333;color:#fff;border-color:#333}
-
 .moduleTab{display:flex;gap:8px;margin-bottom:12px;}
 .moduleTab button{flex:1;padding:12px;border:1px solid #333;background:#fff;color:#333;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;transition:0.2s;}
 .moduleTab button.active{background:#333;color:#fff;}
 .subTab{display:flex;gap:4px;margin:12px 0;flex-wrap:wrap;}
 .subTab button{padding:8px 12px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;flex:1;min-width:60px;}
 .subTab button.active{background:#444;color:#fff;}
-
 #timerWrap{text-align:center;margin:20px 0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #timeDisplay{font-size:clamp(48px,15vw,72px);max-width:90vw;margin:10px auto;font-weight:bold;font-variant-numeric:tabular-nums}
 #timeDisplay.ready{color:#ffbb00}
@@ -58,13 +54,11 @@ twisty-player{width:100%;height:100%}
 #statPanel{margin:12px 0;padding:10px;border:1px solid #ccc;border-radius:8px;text-align:center;line-height:1.6}
 #observeToggle{margin-bottom:8px;padding:6px 10px;cursor:pointer}
 .warn-text{color:#c82423;font-size:14px;margin-top:4px;text-align:center}
-
 .trainerPanel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:#f9f9f9;border-radius:8px;border:1px dashed #ccc;}
 .trainerPanel button{padding:8px 16px;font-size:14px;font-weight:bold;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;transition:all 0.2s;}
 .trainerPanel button:hover{background:#e0e0e0;}
 .trainerPanel button.active{background:#333;color:#fff;border-color:#333;}
 .trainerPanel button.stop-btn{border-color:#c82423;color:#c82423;display:none;}
-
 @media (max-width: 360px) {
   .tab button { padding: 6px; font-size: 13px; }
   #puzzleMainBtn { padding: 6px 10px; font-size: 13px; }
@@ -383,8 +377,10 @@ function renderF(raw, id, puzzleType) {
                 try { 
                     let tp=document.createElement("twisty-player"); 
                     tp.setAttribute("puzzle", puzzleType);
-                    tp.setAttribute("setup-alg", s); // 逆公式作为初始打乱状态
-                    tp.setAttribute("alg", alg);     // 原公式作为播放动画
+                    // 修复重点：必须带 experimental- 前缀，且锚点设为 end
+                    tp.setAttribute("experimental-setup-alg", s);
+                    tp.setAttribute("experimental-setup-anchor", "end");
+                    tp.setAttribute("alg", alg);
                     tp.setAttribute("control-panel","playback"); 
                     tp.setAttribute("autoplay","false"); 
                     tp.setAttribute("background","none");

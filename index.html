@@ -116,7 +116,6 @@ twisty-player{width:100%;height:100%}
     </section>
 
     <section id="formula" class="page" style="display:none">
-        <!-- 训练器面板（保留三阶和二阶的训练功能） -->
         <div class="trainerPanel">
             <button type="button" id="btnTrainOLL">🎯 训练三阶OLL</button>
             <button type="button" id="btnTrainPLL">🎯 训练三阶PLL</button>
@@ -124,20 +123,17 @@ twisty-player{width:100%;height:100%}
             <button type="button" id="btnStopTrain" class="stop-btn">🛑 停止训练</button>
         </div>
 
-        <!-- 模块切换 -->
         <div class="moduleTab">
             <button type="button" class="modBtn active" data-mod="3x3">三阶公式库</button>
             <button type="button" class="modBtn" data-mod="2x2">二阶公式库</button>
         </div>
 
-        <!-- 三阶公式模块 -->
         <div id="mod3x3">
             <div class="subTab"><button type="button" data-sub="oll" class="active">OLL</button><button type="button" data-sub="pll">PLL</button></div>
             <div id="t3_ollList"></div>
             <div id="t3_pllList" style="display:none"></div>
         </div>
 
-        <!-- 二阶公式模块 -->
         <div id="mod2x2" style="display:none">
             <div class="subTab"><button type="button" data-sub="oll" class="active">二阶 OLL</button><button type="button" data-sub="pbl">二阶 PBL</button></div>
             <div id="t2_ollList"></div>
@@ -213,7 +209,6 @@ async function genScr() {
         let setupStr = "";
         try { setupStr = new window.Alg(alg).invert().toString(); } catch(e) { setupStr = alg; }
         
-        // 二阶由于公式短，有时不加 AUF，三阶加
         let aufPre = (trainMode === 'oll' || trainMode === 'pll') ? getRandomAUF() : "";
         let aufPost = (trainMode === 'oll' || trainMode === 'pll') ? getRandomAUF() : "";
         let fullSetup = (aufPre + setupStr + " " + aufPost).trim();
@@ -263,7 +258,6 @@ function startTrain(mode) {
     genScr();
 }
 
-// 点击二阶训练时，默认练二阶 OLL
 btnTrainOLL.onclick = () => startTrain('oll');
 btnTrainPLL.onclick = () => startTrain('pll');
 btnTrain2x2.onclick = () => startTrain('2x2_oll');
@@ -418,8 +412,13 @@ function renderF(raw, id, puzzleType) {
                 document.querySelectorAll(".formulaItem").forEach(el => { let t=el.querySelector(".twistContainer"); if(t) while(t.firstChild) t.removeChild(t.firstChild); el.dataset.open="false"; });
                 try { 
                     let tp=document.createElement("twisty-player"); 
-                    tp.setAttribute("puzzle", puzzleType); // 动态应用魔方类型
-                    tp.setAttribute("setup-alg",s); tp.setAttribute("alg",alg); tp.setAttribute("control-panel","playback"); tp.setAttribute("autoplay","false"); c.appendChild(tp); 
+                    tp.setAttribute("puzzle", puzzleType);
+                    tp.setAttribute("setup-alg", s); // 逆公式
+                    tp.setAttribute("experimental-setup-anchor", "end"); // 关键：固定初始状态为逆公式执行后的结果
+                    tp.setAttribute("alg", alg); // 原公式
+                    tp.setAttribute("control-panel","playback"); 
+                    tp.setAttribute("autoplay","false"); 
+                    c.appendChild(tp); 
                 } catch(err) { c.textContent = "⚠️ 当前环境不支持3D渲染"; }
                 d.dataset.open = "true";
             }

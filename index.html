@@ -4,10 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
-<!-- 引入外部公式数据 -->
-<script src="formulas_3x3.js"></script>
-<script src="formulas_2x2.js"></script>
-<!-- 引入外部 3D 库 -->
+<!-- 只引入这一个公式文件 -->
+<script src="formulas.js"></script>
+<!-- 引入 3D 渲染引擎 -->
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
@@ -23,15 +22,12 @@ h1{text-align:center;margin:12px 0;font-size:24px}
 .tab{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
 .tab button{flex:1;padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:15px;cursor:pointer}
 .tab button.active{background:#333;color:#fff;border-color:#333}
-
-/* 模块与子分类 Tab（完全由 JS 注入） */
 .moduleTab{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 .moduleTab button{flex:1;padding:12px;border:1px solid #333;background:#fff;color:#333;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;transition:0.2s;min-width:100px;}
 .moduleTab button.active{background:#333;color:#fff;}
 .subTab{display:flex;gap:4px;margin:12px 0;flex-wrap:wrap;}
 .subTab button{padding:8px 12px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;flex:1;min-width:60px;}
 .subTab button.active{background:#444;color:#fff;}
-
 #timerWrap{text-align:center;margin:20px 0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #timeDisplay{font-size:clamp(48px,15vw,72px);max-width:90vw;margin:10px auto;font-weight:bold;font-variant-numeric:tabular-nums}
 #timeDisplay.ready{color:#ffbb00}
@@ -60,13 +56,11 @@ twisty-player{width:100%;height:100%}
 #statPanel{margin:12px 0;padding:10px;border:1px solid #ccc;border-radius:8px;text-align:center;line-height:1.6}
 #observeToggle{margin-bottom:8px;padding:6px 10px;cursor:pointer}
 .warn-text{color:#c82423;font-size:14px;margin-top:4px;text-align:center}
-
 .trainerPanel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:#f9f9f9;border-radius:8px;border:1px dashed #ccc;}
 .trainerPanel button{padding:8px 16px;font-size:14px;font-weight:bold;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;transition:all 0.2s;}
 .trainerPanel button:hover{background:#e0e0e0;}
 .trainerPanel button.active{background:#333;color:#fff;border-color:#333;}
 .trainerPanel button.stop-btn{border-color:#c82423;color:#c82423;display:none;}
-
 @media (max-width: 360px) {
   .tab button { padding: 6px; font-size: 13px; }
   #puzzleMainBtn { padding: 6px 10px; font-size: 13px; }
@@ -126,11 +120,7 @@ twisty-player{width:100%;height:100%}
             <button type="button" id="btnTrain2x2">🎯 训练二阶</button>
             <button type="button" id="btnStopTrain" class="stop-btn">🛑 停止训练</button>
         </div>
-        
-        <!-- 核心升级：整个公式库界面将由 JS 动态生成，支持无限扩展 -->
-        <div id="dynamicFormulaUI">
-            <!-- 等待 JS 渲染 -->
-        </div>
+        <div id="dynamicFormulaUI"></div>
     </section>
 
     <section id="bluetooth" class="page" style="display:none"><h3>蓝牙待开发</h3></section>
@@ -138,9 +128,6 @@ twisty-player{width:100%;height:100%}
 
 <script>
 window.onerror = function(msg) { console.log("防崩捕获:", msg); return true; };
-
-// 将多个外部公式库合并为一个总数据源
-window.FormulaDB = Object.assign({}, window.FormulaDB_3x3, window.FormulaDB_2x2);
 
 const pList = [{key:"3x3x3",name:"三阶",eventId:"333"},{key:"2x2x2",name:"二阶",eventId:"222"},{key:"4x4x4",name:"四阶",eventId:"444"},{key:"pyraminx",name:"金字塔",eventId:"pyraminx"},{key:"skewb",name:"斜转",eventId:"skewb"}];
 const fData = {"333":["R U R' U R U2 R'","F R U R' U' F'"],"default":["R U R' U'"]};
@@ -164,7 +151,7 @@ function getRandomAUF() { let aufs = ["", "U ", "U' ", "U2 "]; return aufs[Math.
 
 async function genScr() {
     if (trainMode) {
-        let pool = window.FormulaDB[trainMode[0]][trainMode[1]];
+        let pool = window.FormulaDB ? window.FormulaDB[trainMode[0]][trainMode[1]] : null;
         let cubeType = trainMode[0] === '2x2' ? "2x2x2" : "3x3x3";
         if (!pool) return;
         
@@ -299,18 +286,14 @@ document.getElementById("clearRecordsBtn").onclick = () => { if(confirm("清空�
 
 document.querySelectorAll(".tab button").forEach(b => { b.onclick = () => { document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".page").forEach(p=>p.style.display="none"); document.getElementById(b.dataset.tab).style.display="block"; }; });
 
-// ==========================================
-// 核心逻辑：公式库全动态生成
-// ==========================================
 function buildFormulaUI() {
     const container = document.getElementById("dynamicFormulaUI");
     while (container.firstChild) container.removeChild(container.firstChild);
-    
-    // 如果数据未加载，给出最明确的报错
+
     if (!window.FormulaDB || Object.keys(window.FormulaDB).length === 0) {
         let err = document.createElement("div");
         err.style = "color:#c82423; padding:20px; text-align:center; font-weight:bold;";
-        err.innerHTML = "⚠️ 公式数据未加载！<br><br>请检查：<br>1. 是否有 formulas_3x3.js 文件？<br>2. index.html 是否有引入该文件？<br>3. 公式文件内部是否有语法错误？";
+        err.innerHTML = "⚠️ 外部数据未加载<br><br><button onclick='location.reload()' style='padding:10px 20px;font-size:16px;margin-top:10px;'>点击重试</button>";
         container.appendChild(err);
         return;
     }
@@ -321,8 +304,7 @@ function buildFormulaUI() {
 
     Object.keys(window.FormulaDB).forEach((puzzleKey, idx) => {
         let modBtn = document.createElement("button");
-        modBtn.type = "button"; 
-        modBtn.textContent = puzzleNames[puzzleKey] || (puzzleKey + " 公式库");
+        modBtn.type = "button"; modBtn.textContent = puzzleNames[puzzleKey] || (puzzleKey + " 公式库");
         if(idx === 0) modBtn.classList.add("active");
         
         let puzzleData = window.FormulaDB[puzzleKey];
@@ -404,10 +386,11 @@ function renderFormulaList(raw, containerDiv, puzzleType) {
     });
 }
 
-// 等页面所有资源加载完毕后再执行渲染
 window.addEventListener('load', () => {
-    buildFormulaUI();
-    genScr(); renderHist();
+    setTimeout(() => {
+        buildFormulaUI();
+        genScr(); renderHist();
+    }, 100);
 });
 </script>
 </body>

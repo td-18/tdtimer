@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
 <script src="formulas.js"></script>
-<script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
+<!-- 加上 ?v=2 强制浏览器加载最新版，防止缓存导致属性失效 -->
+<script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty?v=2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
 body{background:#fff;color:#111;padding:12px;max-width:95vw;margin:0 auto;touch-action:manipulation}
@@ -365,7 +366,7 @@ setupSubTabs("sub2x2", ["t2_ollList", "t2_pblList", "t2_cllList", "t2_eg1List", 
 function renderF(raw, id, puzzleType) {
     let w = document.getElementById(id); while (w.firstChild) w.removeChild(w.firstChild);
     raw.forEach(item => {
-        let name=item[0], alg=item[1], s=""; try { s=new window.Alg(alg).invert().toString(); } catch(e){}
+        let name=item[0], alg=item[1];
         let d = document.createElement("div"); d.className = "formulaItem"; d.dataset.open = "false";
         let b = document.createElement("b"); b.textContent = name; d.appendChild(b); d.appendChild(document.createTextNode("：" + alg));
         let tc = document.createElement("div"); tc.className = "twistContainer"; d.appendChild(tc);
@@ -374,16 +375,21 @@ function renderF(raw, id, puzzleType) {
             if(d.dataset.open==="true"){ while(c.firstChild) c.removeChild(c.firstChild); d.dataset.open="false"; }
             else {
                 document.querySelectorAll(".formulaItem").forEach(el => { let t=el.querySelector(".twistContainer"); if(t) while(t.firstChild) t.removeChild(t.firstChild); el.dataset.open="false"; });
+                
+                // 修复核心：在用户点击展开的瞬间计算逆公式！确保窗口对象已加载！
+                let s = "";
+                try { 
+                    if(window.Alg) s = new window.Alg(alg).invert().toString(); 
+                } catch(e) { console.log("计算逆公式失败", e); }
+
                 try { 
                     let tp=document.createElement("twisty-player"); 
                     tp.setAttribute("puzzle", puzzleType);
-                    // 修复重点：必须带 experimental- 前缀，且锚点设为 end
                     tp.setAttribute("experimental-setup-alg", s);
                     tp.setAttribute("experimental-setup-anchor", "end");
                     tp.setAttribute("alg", alg);
                     tp.setAttribute("control-panel","playback"); 
                     tp.setAttribute("autoplay","false"); 
-                    tp.setAttribute("background","none");
                     c.appendChild(tp); 
                 } catch(err) { c.textContent = "⚠️ 当前环境不支持3D渲染"; }
                 d.dataset.open = "true";

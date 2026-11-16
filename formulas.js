@@ -60,7 +60,7 @@ window.twoOll = [
     ["OLL 7 (L)", "F' R U R' U' R' F R"]
 ];
 
-// === 二阶 PBL (采用 Adj/Opp 命名体系) ===
+// === 二阶 PBL ===
 window.twoPbl = [
     ["Adj (邻角)", "R U2' R' U' R U2' R' F R' F' R U'"],
     ["Adj Adj (双邻角)", "R2' U F2' U2' R2' U R2' y2"],
@@ -104,15 +104,20 @@ window.twoEg1 = [
 
 // === 二阶 EG2 (40个) ===
 window.twoEg2 = [
-    ["EG2 AS 1", "R U R' U R U2 R B2 R'2"], ["EG2 AS 2", "R' F U R' F R2 U R' U' R F' R'"],
-    ["EG2 AS 3", "U R' U2 F R' U R' F R2 F' R'2 F' R U' R"], ["EG2 AS 4", "F U' R2 U' R' U2 R U' R'2 F' R U' R'"],
-    ["EG2 AS 5", "F2 R2 F' R' F' R F' R F2 U' R' F U' R' U' R'"], ["EG2 AS 6", "R' U' R U' R' U2 R' F2 R2 F' U' R' U R' U'2 F R2"],
+    ["EG2 AS 1", "R U R' U R U2 R B2 R2"], // 修复 R'2 -> R2
+    ["EG2 AS 2", "R' F U R' F R2 U R' U' R F' R'"],
+    ["EG2 AS 3", "U R' U2 F R' U R' F R2 F' R2 F' R U' R"], // 修复 R'2 -> R2
+    ["EG2 AS 4", "F U' R2 U' R' U2 R U' R2 F' R U' R'"], // 修复 R'2 -> R2
+    ["EG2 AS 5", "F2 R2 F' R' F' R F' R F2 U' R' F U' R' U' R'"],
+    ["EG2 AS 6", "R' U' R U' R' U2 R' F2 R2 F' U' R' U R' U2 F R2"], // 修复 U'2 -> U2
     ["EG2 H 1", "R2 B2 R2"], ["EG2 H 2", "R2 F2 R2"],
     ["EG2 H 3", "R2 U2 R2 U2 R2"], ["EG2 H 4", "F2 R2 U2 R2 F2"],
     ["EG2 H 5", "R2 U2 R2 U2 F2 R2"],
-    ["EG2 L 1", "R' U R' F R2 U2 R' F' R U' R'"], ["EG2 L 2", "R' U R' F U' R U' R U2 R2 F R U R' U' F"],
-    ["EG2 L 3", "R2 F2 R' F' U' R U2 R' U F R F R U' R U' R"], ["EG2 L 4", "U2 R2 U F' R U' R'2 U' F2 R' U2 R' F R U2 R F2 R2 U' R U' R'"],
-    ["EG2 L 5", "R U R F2 R2 U' R U2 R' F U' R2 F' R'2 F' R U2 R"],
+    ["EG2 L 1", "R' U R' F R2 U2 R' F' R U' R'"],
+    ["EG2 L 2", "R' U R' F U' R U' R U2 R2 F R U R' U' F"],
+    ["EG2 L 3", "R2 F2 R' F' U' R U2 R' U F R F R U' R U' R"],
+    ["EG2 L 4", "U2 R2 U F' R U' R2 U' F2 R' U2 R' F R U2 R F2 R2 U' R U' R'"], // 修复 R'2 -> R2
+    ["EG2 L 5", "R U R F2 R2 U' R U2 R' F U' R2 F' R2 F' R U2 R"], // 修复 R'2 -> R2
     ["EG2 Pi 1", "R U2 R2 F2 R2 F' R U' R'"], ["EG2 Pi 2", "F R2 U' R2 U' R2 U2 F'"],
     ["EG2 Pi 3", "R2 U2 R2 U' R2 U' R2"], ["EG2 Pi 4", "R U2 R' U' R U' R2 U2 R F2 R2"],
     ["EG2 Pi 5", "R' F R2 U' R2 F2 R"],

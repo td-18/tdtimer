@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
-<!-- 引入公式数据 -->
+<!-- 引入外部公式数据文件 -->
 <script src="formulas.js"></script>
 <!-- 引入 3D 渲染引擎 -->
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
@@ -383,11 +383,11 @@ function renderF(raw, id, puzzleType) {
                 try { 
                     let tp=document.createElement("twisty-player"); 
                     tp.setAttribute("puzzle", puzzleType);
-                    tp.setAttribute("experimental-setup-anchor", "start"); 
-                    tp.setAttribute("experimental-setup-alg", s); 
-                    tp.setAttribute("alg", alg); 
+                    tp.setAttribute("setup-alg", s); // 逆公式作为初始打乱状态
+                    tp.setAttribute("alg", alg);     // 原公式作为播放动画
                     tp.setAttribute("control-panel","playback"); 
                     tp.setAttribute("autoplay","false"); 
+                    tp.setAttribute("background","none");
                     c.appendChild(tp); 
                 } catch(err) { c.textContent = "⚠️ 当前环境不支持3D渲染"; }
                 d.dataset.open = "true";

@@ -46,24 +46,20 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 .timer-layout { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 20px; }
 .left-col { width: 320px; display: flex; flex-direction: column; gap: 15px; }
 
-/* 15S 观察复选框 */
 .observe-wrap { display: flex; align-items: center; gap: 8px; padding-left: 10px;}
 .observe-wrap label { font-size: 15px; font-weight: bold; color:#0f2341; cursor: pointer; display:flex; align-items:center; gap:8px;}
 .observe-wrap input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #1b5eb5;}
 
-/* 统计与成绩切换区 */
 .panel-toggle { display: flex; gap: 15px; padding-left: 10px;}
 .panel-toggle button { background: #fff; border: 1px solid #cbdceb; color:#0f2341; padding: 6px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s;}
 .panel-toggle button.active { border-color: #1b5eb5; color: #1b5eb5; box-shadow: 0 0 0 2px rgba(27,94,181,0.1);}
 
-/* 统计面板 */
 #statPanel { background: transparent; padding: 10px; font-size: 14px; color:#333; line-height: 1.8; display: block;}
 #statPanel table { width: 100%; text-align: center; border-collapse: collapse;}
 #statPanel th { font-weight: normal; color:#666; padding-bottom: 8px; font-size: 13px;}
 #statPanel td { padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-variant-numeric: tabular-nums;}
 #statPanel td:first-child { text-align: left; padding-left: 10px; font-weight: bold; color: #555;}
 
-/* 成绩面板 */
 #historyPanel { display: none; flex-direction: column; padding: 10px; max-height: 400px; overflow-y: auto;}
 .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
 #clearRecordsBtn { background: #fff2f2; color: #c82423; border: 1px solid #ffcccc; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;}
@@ -75,7 +71,6 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 .history-item .raw-time { color: #888; font-size: 12px; margin-left: 8px;}
 .history-item .date-text { color: #888; font-size: 12px;}
 
-/* 详情弹窗 */
 #detailModal {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
     background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
@@ -89,7 +84,6 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 .penalty-btn, .del-btn { margin: 5px 5px 0 0; padding: 8px 15px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-weight: bold;}
 .del-btn { border-color: #ffcccc; background: #fff2f2; color: #c82423;}
 
-/* 右侧区域 */
 .right-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 300px; position: relative;}
 
 .scramble-wrap { position: relative; width: 100%; text-align: center; margin-bottom: 20px; padding: 0 40px;}
@@ -177,7 +171,6 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     <button type="button" id="btnHistoryTab">成绩</button>
                 </div>
 
-                <!-- 统计面板 -->
                 <div id="statPanel">
                     <table>
                         <tr><th>单次</th><th>当前</th><th>最佳</th></tr>
@@ -188,10 +181,9 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     </table>
                 </div>
 
-                <!-- 成绩面板 -->
                 <div id="historyPanel">
                     <div class="history-head">
-                        <span style="font-size:13px; color:#888;">点击记录可查看打乱及惩罚</span>
+                        <span style="font-size:13px; color:#888;">点击记录查看打乱</span>
                         <button type="button" id="clearRecordsBtn">清空</button>
                     </div>
                     <div id="historyList"></div>
@@ -211,7 +203,10 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     <p id="tipText"></p>
                 </div>
 
-                <div id="scrambleViewer"></div>
+                <!-- 【优化1】：3D魔方直接写在 HTML 里，加载瞬间完成，无需 JS 注入 -->
+                <div id="scrambleViewer">
+                    <twisty-player id="scrambleCube" puzzle="3x3x3" background="none" control-panel="none"></twisty-player>
+                </div>
             </div>
         </div>
     </section>
@@ -241,7 +236,6 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
         <div id="dynamicFormulaUI"></div>
     </section>
 
-    <!-- 蓝牙页面 -->
     <section id="bluetooth" class="page" style="display:none">
         <h3 style="text-align:center; color:#555; padding:50px;">蓝牙功能待开发...</h3>
     </section>
@@ -255,10 +249,9 @@ const fData = {"333":["R U R' U R U2 R'","F R U R' U' F'"],"default":["R U R' U'
 let curP = pList[0], curScr = "", isDrop = false, isFail = false;
 let trainMode = null, currentTrainCase = "";
 
-const mBtn = document.getElementById("puzzleMainBtn"), dList = document.getElementById("puzzleDropdownList"), sText = document.getElementById("scrambleText"), sCubeWrap = document.getElementById("scrambleViewer"), wMsg = document.getElementById("warnMsg");
-let sCube = null;
-
-function checkWebGL() { try { var c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl'))); } catch(e) { return false; } }
+const mBtn = document.getElementById("puzzleMainBtn"), dList = document.getElementById("puzzleDropdownList"), sText = document.getElementById("scrambleText"), wMsg = document.getElementById("warnMsg");
+// 【优化2】：直接获取 HTML 中已有的 3D 元素
+const sCube = document.getElementById("scrambleCube");
 
 setTimeout(() => {
     try {
@@ -270,11 +263,8 @@ window.addEventListener('libReady', () => { isFail = false; genScr(); });
 const safeLS = { get: k => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }, set: (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch(e) {} }, remove: k => { try { localStorage.removeItem(k); } catch(e) {} } };
 function getRandomAUF() { let aufs = ["", "U ", "U' ", "U2 "]; return aufs[Math.floor(Math.random() * aufs.length)]; }
 
-// ==========================================
-// 核心升级：打乱公式的预加载（Prefetch）机制
-// ==========================================
 let preloadedScramble = null;
-let preloadedPuzzle = null; // 记录预取的是哪个项目
+let preloadedPuzzle = null; 
 
 async function prefetchScramble() {
     if (!window.randomScrambleForEvent || isFail || trainMode) return;
@@ -305,35 +295,26 @@ async function genScr() {
         sText.textContent = `[${currentTrainCase}] 打乱: ${fullSetup}`;
         wMsg.style.display = "block"; wMsg.textContent = "提示: 做原公式即可复原";
         
-        if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
-            try { sCube = document.createElement("twisty-player"); sCube.setAttribute("puzzle", cubeType); sCube.setAttribute("background","none"); sCube.setAttribute("control-panel","none"); sCubeWrap.appendChild(sCube); } catch(e) { sCube = null; }
-        }
         if (sCube) { sCube.setAttribute("puzzle", cubeType); sCube.setAttribute("alg", fullSetup); }
         return;
     }
 
     let k = curP.puzzle || curP.key, fb = fData[curP.eventId] || fData.default;
-    if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
-        try { sCube = document.createElement("twisty-player"); sCube.setAttribute("puzzle","3x3x3"); sCube.setAttribute("background","none"); sCube.setAttribute("control-panel","none"); sCubeWrap.appendChild(sCube); } catch(e) { sCube = null; }
-    }
     
-    // 如果离线，直接本地
     if (isFail || !window.randomScrambleForEvent) { 
         setS(fb[Math.floor(Math.random()*fb.length)], true); 
         if (sCube) sCube.setAttribute("puzzle",k); 
         return; 
     }
 
-    // 如果预取池里有当前项目的打乱，直接使用！
     if (preloadedScramble && preloadedPuzzle === curP.key) {
         setS(preloadedScramble, false);
         if (sCube) sCube.setAttribute("puzzle",k);
-        preloadedScramble = null; // 用掉后清空
-        prefetchScramble(); // 立刻在后台去算下一个
+        preloadedScramble = null; 
+        prefetchScramble(); 
         return;
     }
 
-    // 如果没预取，只能现场算
     sText.textContent = "生成中..."; wMsg.style.display = "none";
     try { 
         let a = await window.randomScrambleForEvent(curP.eventId); 
@@ -389,7 +370,7 @@ function startTrain(p, c) {
     document.querySelector('[data-tab="timer"]').classList.add("active");
     document.querySelectorAll(".page").forEach(p=>p.style.display="none"); 
     document.getElementById("timer").style.display="block";
-    preloadedScramble = null; // 清空预取
+    preloadedScramble = null; 
     genScr();
 }
 btnTrainOLL.onclick = () => startTrain('3x3', 'OLL');
@@ -409,7 +390,7 @@ optNodes.forEach((opt, i) => {
     const p = pList[i];
     opt.onclick = async () => {
         curP = p; isDrop = false; dList.classList.remove("show"); mBtn.setAttribute("aria-expanded", "false"); mBtn.textContent = curP.name; optNodes.forEach((o, j) => o.classList.toggle("active", i === j));
-        preloadedScramble = null; // 切换项目必须清空预取，否则打乱会错位
+        preloadedScramble = null; 
         if (trainMode) btnStopTrain.click(); 
         else { await genScr(); renderHist(); }
     };
@@ -419,7 +400,7 @@ document.addEventListener("click", () => { if (isDrop) { isDrop = false; dList.c
 document.getElementById("newScrambleBtn").onclick = () => genScr();
 
 // ==========================================
-// 核心升级：全屏空白长按 + 智能拦截
+// 核心升级：全屏空白长按 + 智能拦截 (排除 3D 魔方及所有左侧)
 // ==========================================
 let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, isOver = false, pStT = 0, wasIdle = false;
 let isPressingTimer = false; 
@@ -433,16 +414,18 @@ function startO() { clrT(); tState = "observe"; oStT = Date.now(); isOver = fals
 function bPress() { clrT(); if(tState==="running"){ stopT(); return; } if(tState==="idle"||tState==="observe"){ pStT=Date.now(); tState="readyCount"; tDom.className="ready"; if(wasIdle) tDom.textContent="0.00"; rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); } }
 function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ if (h<800 && wasIdle && oOn) { reset(); startO(); } else { tState = "idle"; tDom.className = ""; } } }
 
-// 关键拦截逻辑：排除左侧统计/成绩、按钮、输入框、弹窗等
+// 【关键防误触】：把 .left-col (左侧面板)、3D 魔方本体、弹窗、按钮全部拦截
 function isInteractive(target) {
     return target.closest('button') || 
            target.closest('input') || 
            target.closest('label') || 
            target.closest('.puzzleOption') || 
            target.closest('#detailModal') || 
-           target.closest('.left-col') || /* 拦截左侧整个面板 */
+           target.closest('.left-col') || 
            target.closest('#formula') || 
-           target.closest('#bluetooth');
+           target.closest('#bluetooth') ||
+           target.closest('#scrambleViewer') || // 排除右侧3D容器
+           target.closest('twisty-player');    // 排除3D本体
 }
 
 document.addEventListener("mousedown", e => { if (e.button !== 0) return; if (isInteractive(e.target)) return; isPressingTimer = true; wasIdle = (tState === "idle"); bPress(); });
@@ -515,9 +498,7 @@ document.getElementById("detailPenaltyBtns").onclick = (e) => {
 
 document.getElementById("clearRecordsBtn").onclick = () => { if(confirm("清空当前记录？")){ safeLS.remove(gKey()); renderHist(); } };
 
-// ==========================================
 // 公式库渲染逻辑
-// ==========================================
 function buildFormulaUI() {
     const container = document.getElementById("dynamicFormulaUI");
     while (container.firstChild) container.removeChild(container.firstChild);
@@ -618,12 +599,10 @@ function renderFormulaList(raw, containerDiv, puzzleType) {
     });
 }
 
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        buildFormulaUI();
-        genScr(); renderHist();
-    }, 100);
-});
+// 【优化3】：移除 setTimeout 延迟和 window.load，立刻执行，保证最快速度
+buildFormulaUI();
+genScr(); 
+renderHist();
 </script>
 </body>
 </html>

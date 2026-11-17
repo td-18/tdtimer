@@ -4,126 +4,239 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
-<!-- 引入公式数据文件 -->
+<!-- 公式数据文件 -->
 <script src="formulas.js"></script>
-<!-- 引入 3D 渲染引擎 -->
+<!-- 3D 渲染引擎 -->
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
-body{background:#fff;color:#111;padding:12px;max-width:95vw;margin:0 auto;touch-action:manipulation}
-h1{text-align:center;margin:12px 0;font-size:24px}
-.puzzleDropdownWrap{position:relative;width:fit-content;margin:0 auto 12px}
-#puzzleMainBtn{padding:9px 16px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:15px;cursor:pointer;min-width:120px}
-#puzzleDropdownList{position:absolute;top:105%;left:0;width:max-content;min-width:120px;max-width:90vw;border:1px solid #ddd;background:#fff;border-radius:0 0 8px 8px;box-shadow:0 4px 12px #00000022;display:none;z-index:99;max-height:320px;overflow-y:auto}
-#puzzleDropdownList.show{display:block}
-.puzzleOption{padding:8px 14px;cursor:pointer;outline:none}
-.puzzleOption:hover,.puzzleOption:focus{background:#f3f3f3}
-.puzzleOption.active{background:#333;color:#fff}
-.tab{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
-.tab button{flex:1;padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:15px;cursor:pointer}
-.tab button.active{background:#333;color:#fff;border-color:#333}
-.moduleTab{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
-.moduleTab button{flex:1;padding:12px;border:1px solid #333;background:#fff;color:#333;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;transition:0.2s;min-width:100px;}
-.moduleTab button.active{background:#333;color:#fff;}
-.subTab{display:flex;gap:4px;margin:12px 0;flex-wrap:wrap;}
-.subTab button{padding:8px 12px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;flex:1;min-width:60px;}
-.subTab button.active{background:#444;color:#fff;}
-#timerWrap{text-align:center;margin:20px 0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-#timeDisplay{font-size:clamp(48px,15vw,72px);max-width:90vw;margin:10px auto;font-weight:bold;font-variant-numeric:tabular-nums}
-#timeDisplay.ready{color:#ffbb00}
-#timeDisplay.go{color:#22aa22}
-#timeDisplay.observe{color:#dd2222}
-.scrambleRow{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0}
-.scramble{font-size:18px;font-weight:500;word-break:break-all;min-height:24px;text-align:center}
-#newScrambleBtn{padding:6px 10px;cursor:pointer}
-#scrambleViewer{width:max(min(80vw,300px),200px);height:max(min(80vw,300px),200px);margin:10px auto;overflow:hidden}
-twisty-player{width:100%;height:100%}
-.formulaItem{padding:12px;border-bottom:1px solid #eee;cursor:pointer}
-.twistContainer{margin-top:8px;height:200px}
-#historyBox{margin-top:20px;border:1px solid #ddd;padding:12px;border-radius:8px}
-.history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-#clearRecordsBtn{padding:4px 10px;border:1px solid #c82423;color:#c82423;background:#fff;border-radius:6px;font-size:13px;cursor:pointer}
-.history-item{padding:8px 4px;cursor:pointer;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.history-item.selected{background:#f0f7ff}
-.history-time{font-variant-numeric:tabular-nums;font-size:16px}
-.history-time .penalty{font-weight:bold;margin-left:4px}
-.history-time .penalty.p2{color:#e08a00}
-.history-time .penalty.dnf{color:#c82423}
-.history-item .raw-time{color:#888;font-size:13px;margin-left:6px}
-.penalty-panel{margin-top:8px;padding:8px;background:#f8f8f8;border-radius:6px;word-break:break-all}
-.penalty-btn,.del-btn{margin:3px;padding:6px 12px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer}
-.del-btn{border-color:#ff6666;background:#fff2f2;color:#c82423}
-#statPanel{margin:12px 0;padding:10px;border:1px solid #ccc;border-radius:8px;text-align:center;line-height:1.6}
-#observeToggle{margin-bottom:8px;padding:6px 10px;cursor:pointer}
-.warn-text{color:#c82423;font-size:14px;margin-top:4px;text-align:center}
-.trainerPanel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:#f9f9f9;border-radius:8px;border:1px dashed #ccc;}
-.trainerPanel button{padding:8px 16px;font-size:14px;font-weight:bold;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;transition:all 0.2s;}
-.trainerPanel button:hover{background:#e0e0e0;}
-.trainerPanel button.active{background:#333;color:#fff;border-color:#333;}
-.trainerPanel button.stop-btn{border-color:#c82423;color:#c82423;display:none;}
-@media (max-width: 360px) {
-  .tab button { padding: 6px; font-size: 13px; }
-  #puzzleMainBtn { padding: 6px 10px; font-size: 13px; }
-  .penalty-btn, .del-btn { padding: 4px 8px; font-size: 12px; }
+/* ===== 基础重置与背景 ===== */
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif}
+body{
+    background: linear-gradient(135deg, #e0f0ff 0%, #ffffff 50%, #dceeff 100%);
+    color:#111; min-height:100vh; padding:20px 20px 40px;
+    touch-action:manipulation; overflow-x: hidden;
+}
+h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bottom: 8px; letter-spacing: 1px;}
+
+/* ===== 顶部栏 (蓝牙 + 下拉菜单) ===== */
+.top-bar{display:flex; justify-content:center; align-items:center; gap:12px; margin-bottom: 20px;}
+#navBluetooth{
+    background:none; border:none; font-size:22px; cursor:pointer; color:#0f2341; 
+    width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    transition: background 0.2s;
+}
+#navBluetooth:hover{background: rgba(0,0,0,0.05);}
+.puzzleDropdownWrap{position:relative; width:fit-content;}
+#puzzleMainBtn{padding:6px 20px; border:2px solid #cbdceb; background:#fff; border-radius:20px; font-size:14px; font-weight:bold; cursor:pointer; color:#0f2341; outline:none;}
+#puzzleDropdownList{position:absolute; top:110%; left:50%; transform:translateX(-50%); width:max-content; min-width:120px; border:1px solid #ddd; background:#fff; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.1); display:none; z-index:99;}
+#puzzleDropdownList.show{display:block;}
+.puzzleOption{padding:10px 20px; cursor:pointer; text-align:center; font-size:14px;}
+.puzzleOption:hover{background:#f0f5fa;}
+.puzzleOption.active{background:#0f2341; color:#fff; border-radius:8px;}
+
+/* ===== 主导航 Tab ===== */
+.tab{display:flex; gap:8px; max-width: 800px; margin: 0 auto 20px; background: #fff; padding: 4px; border-radius: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);}
+.tab button{flex:1; padding:12px; border:none; background:transparent; border-radius: 26px; font-size:16px; font-weight:bold; color:#555; cursor:pointer; transition: all 0.3s;}
+.tab button.active{background:#1b5eb5; color:#fff;}
+
+/* ===== 页面容器 ===== */
+.page { max-width: 900px; margin: 0 auto; }
+
+/* ===== 计时页面布局 (左右分栏) ===== */
+.timer-layout {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 20px;
+}
+/* 左侧栏 */
+.left-col { width: 320px; display: flex; flex-direction: column; gap: 15px; }
+.observe-wrap { display: flex; align-items: center; gap: 8px; padding-left: 10px;}
+.observe-wrap button {
+    background: none; border: none; font-size: 15px; font-weight: bold; color:#0f2341; cursor: pointer; display:flex; align-items:center; gap:6px;
+}
+
+/* 统计与成绩切换区 */
+.panel-toggle { display: flex; gap: 15px; padding-left: 10px;}
+.panel-toggle button { background: #fff; border: 1px solid #cbdceb; color:#0f2341; padding: 6px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer;}
+.panel-toggle button.active { border-color: #1b5eb5; color: #1b5eb5; box-shadow: 0 0 0 2px rgba(27,94,181,0.1);}
+
+/* 统计面板 */
+#statPanel { background: transparent; padding: 10px; font-size: 14px; color:#333; line-height: 1.8;}
+#statPanel table { width: 100%; text-align: left; border-collapse: collapse;}
+#statPanel th { font-weight: normal; color:#666; padding-bottom: 5px; text-align: left;}
+#statPanel td { padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-variant-numeric: tabular-nums;}
+
+/* 成绩列表 (点击后变成弹窗) */
+#historyBox {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4);
+    display: none; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(3px);
+}
+.history-card {
+    background: #fff; width: 90%; max-width: 400px; border-radius: 16px; padding: 20px; max-height: 80vh; display: flex; flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
+.history-head h3 { color: #0f2341; }
+#clearRecordsBtn { background: #fff2f2; color: #c82423; border: 1px solid #ffcccc; padding: 6px 12px; border-radius: 8px; cursor: pointer;}
+#historyList { overflow-y: auto; flex: 1;}
+.history-item { padding: 12px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; cursor: pointer; font-size: 16px;}
+.history-item:hover { background: #f9f9f9;}
+.history-item .history-time { font-weight: bold; font-family: monospace;}
+.history-item .history-time .penalty.p2 { color: #e08a00; }
+.history-item .history-item .history-time .penalty.dnf { color: #c82423; }
+.history-item .raw-time { color: #888; font-size: 12px; margin-left: 8px;}
+.history-item .date-text { color: #999; font-size: 13px;}
+
+/* 详情弹出卡片 (惩罚等) */
+.penalty-panel {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); 
+    z-index: 1000; width: 85%; max-width: 320px; word-break: break-all;
+}
+.penalty-panel .scramble-text { font-family: monospace; color: #555; margin-bottom: 15px; font-size: 14px;}
+.penalty-btn, .del-btn { margin: 5px 5px 0 0; padding: 8px 15px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer;}
+.del-btn { border-color: #ffcccc; background: #fff2f2; color: #c82423;}
+
+/* 右侧区域 */
+.right-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 300px; position: relative;}
+
+/* 打乱公式与 Next 按钮 */
+.scramble-wrap { position: relative; width: 100%; text-align: center; margin-bottom: 20px; padding: 0 40px;}
+.scramble { font-size: 16px; font-weight: bold; color: #0f2341; line-height: 1.5; letter-spacing: 0.5px;}
+#newScrambleBtn { position: absolute; right: 0; bottom: -10px; background: none; border: none; color: #1b5eb5; font-size: 14px; font-weight: bold; cursor: pointer;}
+
+/* 主计时器 */
+#timerWrap { text-align: center; margin: 10px 0 20px; user-select: none; -webkit-user-select: none;}
+#timeDisplay { font-size: clamp(70px, 12vw, 100px); font-weight: 900; color: #0f2341; font-variant-numeric: tabular-nums; letter-spacing: -2px;}
+#timeDisplay.ready { color: #ffbb00; }
+#timeDisplay.go { color: #22aa22; }
+#timeDisplay.observe { color: #dd2222; }
+#tipText { display: none; } /* 隐藏提示文字 */
+
+/* 3D 视图 */
+#scrambleViewer { width: 240px; height: 240px; margin-top: 10px;}
+
+/* ===== 公式库区域 ===== */
+.trainerPanel { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; padding: 15px; background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);}
+.trainerPanel button { padding: 10px 20px; font-size: 14px; font-weight: bold; border-radius: 8px; border: 1px solid #cbdceb; background: #f8fbff; color: #0f2341; cursor: pointer;}
+.trainerPanel button.active { background: #1b5eb5; color: #fff; border-color: #1b5eb5;}
+.trainerPanel button.stop-btn { border-color: #c82423; color: #c82423; background: #fff2f2; display: none;}
+
+.moduleTab { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;}
+.moduleTab button { padding: 10px 25px; border: 2px solid #cbdceb; background: #fff; color: #0f2341; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;}
+.moduleTab button.active { background: #0f2341; color: #fff; border-color: #0f2341;}
+
+.subTab { display: flex; gap: 6px; margin: 15px 0; flex-wrap: wrap;}
+.subTab button { padding: 8px 15px; border: 1px solid #cbdceb; background: #fff; color: #0f2341; border-radius: 8px; cursor: pointer;}
+.subTab button.active { background: #1b5eb5; color: #fff; border-color: #1b5eb5;}
+
+.formulaItem { background: #fff; padding: 15px; margin-bottom: 10px; border-radius: 10px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
+.formulaItem b { color: #0f2341; display: inline-block; width: 80px;}
+.twistContainer { margin-top: 10px; height: 200px; display: flex; justify-content: center;}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .timer-layout { flex-direction: column-reverse; align-items: center;}
+    .left-col { width: 100%; align-items: center; padding-top: 30px;}
+    .right-col { width: 100%;}
+    .scramble { font-size: 15px; padding: 0 10px;}
+    #newScrambleBtn { right: 10px;}
 }
 </style>
 </head>
 <body>
 <header>
     <h1>TDtimer</h1>
-    <div class="puzzleDropdownWrap">
-        <button type="button" id="puzzleMainBtn" aria-haspopup="menu" aria-expanded="false">三阶</button>
-        <div id="puzzleDropdownList" role="menu">
-            <div class="puzzleOption active" role="menuitem" tabindex="0">三阶</div>
-            <div class="puzzleOption" role="menuitem" tabindex="0">二阶</div>
-            <div class="puzzleOption" role="menuitem" tabindex="0">四阶</div>
-            <div class="puzzleOption" role="menuitem" tabindex="0">金字塔</div>
-            <div class="puzzleOption" role="menuitem" tabindex="0">斜转</div>
+    <div class="top-bar">
+        <button id="navBluetooth" title="蓝牙">📶</button>
+        <div class="puzzleDropdownWrap">
+            <button type="button" id="puzzleMainBtn" aria-haspopup="menu" aria-expanded="false">三阶</button>
+            <div id="puzzleDropdownList" role="menu">
+                <div class="puzzleOption active" role="menuitem" tabindex="0">三阶</div>
+                <div class="puzzleOption" role="menuitem" tabindex="0">二阶</div>
+                <div class="puzzleOption" role="menuitem" tabindex="0">四阶</div>
+                <div class="puzzleOption" role="menuitem" tabindex="0">金字塔</div>
+                <div class="puzzleOption" role="menuitem" tabindex="0">斜转</div>
+            </div>
         </div>
     </div>
     <nav class="tab" role="navigation">
         <button type="button" data-tab="timer" class="active" aria-controls="timer">计时</button>
         <button type="button" data-tab="formula" aria-controls="formula">公式库</button>
-        <button type="button" data-tab="bluetooth" aria-controls="bluetooth">蓝牙</button>
     </nav>
 </header>
 
 <main>
+    <!-- 计时页面 -->
     <section id="timer" class="page">
-        <button type="button" id="observeToggle">开启 WCA 15s观察</button>
-        <div class="scrambleRow">
-            <div>
-                <div id="scrambleText" class="scramble">加载中...</div>
-                <div id="warnMsg" class="warn-text"></div>
+        <div class="timer-layout">
+            <!-- 左侧：观察 + 统计 -->
+            <div class="left-col">
+                <div class="observe-wrap">
+                    <button type="button" id="observeToggle">15S观察 □</button>
+                </div>
+                
+                <div class="panel-toggle">
+                    <button type="button" id="btnStatTab" class="active">统计</button>
+                    <button type="button" id="btnHistoryTab">成绩</button>
+                </div>
+
+                <div id="statPanel">
+                    <table>
+                        <tr><th></th><th>当前</th><th>最佳</th></tr>
+                        <tr><td>单次</td><td id="bestSingle">-</td><td>-</td></tr>
+                        <tr><td>mo3</td><td id="mo3">-</td><td>-</td></tr>
+                        <tr><td>ao5</td><td id="ao5">-</td><td>-</td></tr>
+                        <tr><td>ao12</td><td id="ao12">-</td><td>-</td></tr>
+                    </table>
+                </div>
+
+                <!-- 成绩弹窗 (由按钮触发) -->
+                <div id="historyBox">
+                    <div class="history-card">
+                        <div class="history-head">
+                            <h3>成绩记录</h3>
+                            <div>
+                                <button type="button" id="closeHistoryBtn" style="background:none;border:none;font-size:20px;cursor:pointer;margin-right:10px;">×</button>
+                                <button type="button" id="clearRecordsBtn">清空</button>
+                            </div>
+                        </div>
+                        <div id="historyList"></div>
+                    </div>
+                </div>
             </div>
-            <button type="button" id="newScrambleBtn">新打乱</button>
-        </div>
-        <div id="scrambleViewer"></div>
-        <div id="statPanel">
-            <div>MO3：<span id="mo3">—</span> | AO5：<span id="ao5">—</span> | AO12：<span id="ao12">—</span></div>
-            <div>最佳：<span id="bestSingle">—</span> | 最佳AO5：<span id="bestAo5">—</span></div>
-        </div>
-        <div id="timerWrap">
-            <div id="timeDisplay">0.00</div>
-            <p id="tipText">单击观察 / 长按预备</p>
-        </div>
-        <div id="historyBox">
-            <div class="history-head"><h3>成绩记录</h3><button type="button" id="clearRecordsBtn">清空记录</button></div>
-            <div id="historyList"></div>
+
+            <!-- 右侧：打乱 + 计时 + 3D -->
+            <div class="right-col">
+                <div class="scramble-wrap">
+                    <div id="scrambleText" class="scramble">加载中...</div>
+                    <button type="button" id="newScrambleBtn">next</button>
+                    <div id="warnMsg" class="warn-text" style="color:#c82423;font-size:12px;margin-top:5px;display:none;"></div>
+                </div>
+
+                <div id="timerWrap">
+                    <div id="timeDisplay">0.00</div>
+                    <p id="tipText"></p> <!-- 已隐藏 -->
+                </div>
+
+                <div id="scrambleViewer"></div>
+            </div>
         </div>
     </section>
 
+    <!-- 公式库页面 -->
     <section id="formula" class="page" style="display:none">
         <div class="trainerPanel">
-            <button type="button" id="btnTrainOLL">🎯 训练三阶OLL</button>
-            <button type="button" id="btnTrainPLL">🎯 训练三阶PLL</button>
-            <button type="button" id="btnTrain2x2">🎯 训练二阶</button>
-            <button type="button" id="btnStopTrain" class="stop-btn">🛑 停止训练</button>
+            <button type="button" id="btnTrainOLL">训练三阶OLL</button>
+            <button type="button" id="btnTrainPLL">训练三阶PLL</button>
+            <button type="button" id="btnTrain2x2">训练二阶</button>
+            <button type="button" id="btnStopTrain" class="stop-btn">停止训练</button>
         </div>
         <div id="dynamicFormulaUI"></div>
     </section>
 
-    <section id="bluetooth" class="page" style="display:none"><h3>蓝牙待开发</h3></section>
+    <!-- 蓝牙页面 -->
+    <section id="bluetooth" class="page" style="display:none">
+        <h3 style="text-align:center; color:#555; padding:50px;">蓝牙功能待开发...</h3>
+    </section>
 </main>
 
 <script>
@@ -167,7 +280,7 @@ async function genScr() {
 
         curScr = fullSetup;
         sText.textContent = `[${currentTrainCase}] 打乱: ${fullSetup}`;
-        wMsg.textContent = "提示: 做原公式即可复原";
+        wMsg.style.display = "block"; wMsg.textContent = "提示: 做原公式即可复原";
         
         if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
             try { sCube = document.createElement("twisty-player"); sCube.setAttribute("puzzle", cubeType); sCube.setAttribute("background","none"); sCube.setAttribute("control-panel","none"); sCubeWrap.appendChild(sCube); } catch(e) { sCube = null; }
@@ -176,7 +289,7 @@ async function genScr() {
         return;
     }
 
-    sText.textContent = "生成中..."; wMsg.textContent = "";
+    sText.textContent = "生成中..."; wMsg.style.display = "none";
     let k = curP.puzzle || curP.key, fb = fData[curP.eventId] || fData.default;
     if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
         try { sCube = document.createElement("twisty-player"); sCube.setAttribute("puzzle","3x3x3"); sCube.setAttribute("background","none"); sCube.setAttribute("control-panel","none"); sCubeWrap.appendChild(sCube); } catch(e) { sCube = null; }
@@ -185,8 +298,50 @@ async function genScr() {
     try { let a = await window.randomScrambleForEvent(curP.eventId); setS(a.toString(), false); if (sCube) sCube.setAttribute("puzzle",k); } 
     catch(e) { setS(fb[Math.floor(Math.random()*fb.length)], true); if (sCube) sCube.setAttribute("puzzle",k); }
 }
-function setS(str, fb) { curScr = str; sText.textContent = str; if (sCube) sCube.setAttribute("alg",str); wMsg.textContent = fb ? "⚠️ 降级：本地打乱" : ""; }
+function setS(str, fb) { curScr = str; sText.textContent = str; if (sCube) sCube.setAttribute("alg",str); wMsg.style.display = fb ? "block" : "none"; if(fb) wMsg.textContent = "⚠️ 降级：本地打乱"; }
 
+// 导航与切换逻辑
+document.getElementById("navBluetooth").onclick = () => {
+    document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p=>p.style.display="none");
+    document.getElementById("bluetooth").style.display = "block";
+};
+document.querySelectorAll(".tab button").forEach(b => { 
+    b.onclick = () => { 
+        document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active")); 
+        b.classList.add("active"); 
+        document.querySelectorAll(".page").forEach(p=>p.style.display="none"); 
+        document.getElementById(b.dataset.tab).style.display="block"; 
+    }; 
+});
+
+// 15s 观察的 UI 状态切换
+let oOn = false;
+const observeToggleBtn = document.getElementById("observeToggle");
+observeToggleBtn.onclick = () => { 
+    oOn = !oOn; 
+    observeToggleBtn.textContent = oOn ? "15S观察 ■" : "15S观察 □"; 
+};
+
+// 统计与成绩弹窗切换
+document.getElementById("btnStatTab").onclick = () => {
+    document.getElementById("btnStatTab").classList.add("active");
+    document.getElementById("btnHistoryTab").classList.remove("active");
+    document.getElementById("historyBox").style.display = "none";
+};
+document.getElementById("btnHistoryTab").onclick = () => {
+    document.getElementById("btnHistoryTab").classList.add("active");
+    document.getElementById("btnStatTab").classList.remove("active");
+    document.getElementById("historyBox").style.display = "flex"; // 显示弹窗
+    renderHist();
+};
+document.getElementById("closeHistoryBtn").onclick = () => {
+    document.getElementById("historyBox").style.display = "none";
+    document.getElementById("btnStatTab").classList.add("active");
+    document.getElementById("btnHistoryTab").classList.remove("active");
+};
+
+// 训练与项目下拉
 const btnTrainOLL = document.getElementById("btnTrainOLL"), btnTrainPLL = document.getElementById("btnTrainPLL"), btnTrain2x2 = document.getElementById("btnTrain2x2"), btnStopTrain = document.getElementById("btnStopTrain");
 function startTrain(p, c) {
     trainMode = [p, c];
@@ -224,16 +379,16 @@ mBtn.onclick = e => { e.stopPropagation(); isDrop = !isDrop; dList.classList.tog
 document.addEventListener("click", () => { if (isDrop) { isDrop = false; dList.classList.remove("show"); } });
 document.getElementById("newScrambleBtn").onclick = () => genScr();
 
-let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, oOn = false, isOver = false, pStT = 0, wasIdle = false;
-const tDom = document.getElementById("timeDisplay"), tWrap = document.getElementById("timerWrap"), tTip = document.getElementById("tipText");
-document.getElementById("observeToggle").onclick = e => { oOn = !oOn; e.target.textContent = oOn ? "✅ 已开启15s" : "开启 15s观察"; };
+// 计时逻辑
+let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, isOver = false, pStT = 0, wasIdle = false;
+const tDom = document.getElementById("timeDisplay"), tWrap = document.getElementById("timerWrap");
 function clrT() { if(raf){cancelAnimationFrame(raf);raf=null;} if(rTimer){clearTimeout(rTimer);rTimer=null;} if(oTimer){clearInterval(oTimer);oTimer=null;} }
-function reset() { clrT(); tState = "idle"; isOver = false; tDom.className = ""; tDom.textContent = "0.00"; tTip.textContent = "单击观察 / 长按预备"; }
-function startT() { clrT(); stT = Date.now(); tState = "running"; tDom.className = ""; tTip.textContent = "计时中"; const lp = () => { if(tState!=="running")return; tDom.textContent = ((Date.now()-stT)/1000).toFixed(2); raf = requestAnimationFrame(lp); }; lp(); }
-function stopT() { if (tState === "running") { saveRec(Date.now()-stT, curScr, isOver ? "+2" : ""); tState = "idle"; isOver = false; clrT(); tDom.className = ""; tTip.textContent = "单击观察 / 长按预备"; genScr(); } else reset(); }
-function startO() { clrT(); tState = "observe"; oStT = Date.now(); isOver = false; tDom.className = "observe"; tDom.textContent = "15"; tTip.textContent = "观察中"; oTimer = setInterval(() => { let el = Date.now()-oStT; if(el>=17000){ saveRec(0,curScr,"DNF"); reset(); return; } if(el>=15000){ isOver=true; tDom.textContent="0"; tTip.textContent="超15s +2"; } else tDom.textContent = Math.ceil((15000-el)/1000).toString(); }, 100); }
+function reset() { clrT(); tState = "idle"; isOver = false; tDom.className = ""; tDom.textContent = "0.00"; }
+function startT() { clrT(); stT = Date.now(); tState = "running"; tDom.className = ""; const lp = () => { if(tState!=="running")return; tDom.textContent = ((Date.now()-stT)/1000).toFixed(2); raf = requestAnimationFrame(lp); }; lp(); }
+function stopT() { if (tState === "running") { saveRec(Date.now()-stT, curScr, isOver ? "+2" : ""); tState = "idle"; isOver = false; clrT(); tDom.className = ""; genScr(); } else reset(); }
+function startO() { clrT(); tState = "observe"; oStT = Date.now(); isOver = false; tDom.className = "observe"; tDom.textContent = "15"; oTimer = setInterval(() => { let el = Date.now()-oStT; if(el>=17000){ saveRec(0,curScr,"DNF"); reset(); return; } if(el>=15000){ isOver=true; tDom.textContent="0"; } else tDom.textContent = Math.ceil((15000-el)/1000).toString(); }, 100); }
 function bPress() { clrT(); if(tState==="running"){ stopT(); return; } if(tState==="idle"||tState==="observe"){ pStT=Date.now(); tState="readyCount"; tDom.className="ready"; if(wasIdle) tDom.textContent="0.00"; rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); } }
-function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ if (h<800 && wasIdle && oOn) { reset(); startO(); } else { tState = "idle"; tDom.className = ""; tTip.textContent = "单击观察 / 长按预备"; } } }
+function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ if (h<800 && wasIdle && oOn) { reset(); startO(); } else { tState = "idle"; tDom.className = ""; } } }
 
 tWrap.addEventListener("touchstart", e => { e.preventDefault(); wasIdle = (tState === "idle"); bPress(); }, { passive: false });
 tWrap.addEventListener("touchend", e => { e.preventDefault(); if (tState !== "running") ePress(); }, { passive: false });
@@ -242,21 +397,24 @@ tWrap.addEventListener("mouseup", e => { if (e.button !== 0) return; e.preventDe
 document.addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); if (e.repeat) return; wasIdle = (tState === "idle"); bPress(); } });
 document.addEventListener("keyup", e => { if (e.code === "Space") { e.preventDefault(); if (tState !== "running") ePress(); } });
 
+// 成绩记录渲染
 let sIdx = null; 
 const gKey = () => "td_records_" + (trainMode ? trainMode.join('_') : curP.key); 
-function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); renderHist(); }
+function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); if(document.getElementById("historyBox").style.display === "flex") renderHist(); }
 function setPen(i,p){ let r=safeLS.get(gKey()); if(r[i]){ r[i].penalty=p; safeLS.set(gKey(),r); renderHist(); } }
 function delRec(i){ let r=safeLS.get(gKey()); r.splice(i,1); sIdx=null; safeLS.set(gKey(),r); renderHist(); }
 function calcA(recs,n){ if(recs.length<n)return null; let v=recs.slice(0,n).map(r=>r.penalty==="DNF"?null:r.time+(r.penalty==="+2"?2000:0)); if(v.includes(null))return null; v.sort((a,b)=>a-b); return v.slice(1,-1).reduce((a,b)=>a+b,0)/(n-2); }
 
 function renderHist() {
     let r = safeLS.get(gKey()), box = document.getElementById("historyList"); while (box.firstChild) box.removeChild(box.firstChild);
+    
+    // 更新左侧统计表
     let bst = r.length ? Math.min(...r.filter(x=>x.penalty!=="DNF").map(x=>x.time+(x.penalty==="+2"?2000:0))) : null;
-    ["mo3","ao5","ao12"].forEach((id,i)=>{ let v=calcA(r,i*2+3); document.getElementById(id).textContent = v ? (v/1000).toFixed(2) : "—"; });
-    document.getElementById("bestSingle").textContent = isFinite(bst) ? (bst/1000).toFixed(2) : "—";
+    ["mo3","ao5","ao12"].forEach((id,i)=>{ let v=calcA(r,i*2+3); document.getElementById(id).textContent = v ? (v/1000).toFixed(2) : "-"; });
+    document.getElementById("bestSingle").textContent = isFinite(bst) ? (bst/1000).toFixed(2) : "-";
     
     r.forEach((x,i)=>{
-        let d = document.createElement("div"); d.className = "history-item" + (sIdx===i ? " selected" : "");
+        let d = document.createElement("div"); d.className = "history-item";
         let ts = document.createElement("span"); ts.className = "history-time";
         let st = x.penalty==="DNF" ? "DNF" : ((x.time+(x.penalty==="+2"?2000:0))/1000).toFixed(2);
         ts.textContent = st;
@@ -264,28 +422,40 @@ function renderHist() {
             let ps = document.createElement("span"); ps.className = "penalty " + (x.penalty==='+2'?'p2':'dnf'); ps.textContent = x.penalty; ts.appendChild(ps);
             let rs = document.createElement("span"); rs.className = "raw-time"; rs.textContent = `(${(x.time/1000).toFixed(2)})`; ts.appendChild(rs);
         }
-        let ds = document.createElement("span"); ds.style.color = "#888"; ds.style.fontSize = "13px"; ds.textContent = x.date;
+        let ds = document.createElement("span"); ds.className = "date-text"; ds.textContent = x.date.split(' ')[0];
         d.appendChild(ts); d.appendChild(ds);
-        d.onclick = () => { sIdx = sIdx===i ? null : i; renderHist(); };
+        
+        d.onclick = (e) => { 
+            e.stopPropagation(); 
+            sIdx = sIdx===i ? null : i; 
+            renderHist(); 
+        };
         box.appendChild(d);
         
         if(sIdx === i) {
             let p = document.createElement("div"); p.className = "penalty-panel";
-            let sd = document.createElement("div"); sd.textContent = "打乱：" + x.scramble;
-            let bd = document.createElement("div"); bd.style.marginTop = "6px";
+            p.onclick = e => e.stopPropagation(); // 阻止冒泡
+            let sd = document.createElement("div"); sd.className = "scramble-text"; sd.textContent = x.scramble;
+            let bd = document.createElement("div");
             [["p2","+2"],["dnf","DNF"],["clear","清除"]].forEach(([act, txt]) => {
                 let btn = document.createElement("button"); btn.type = "button"; btn.className = "penalty-btn"; btn.dataset.act = act; btn.dataset.idx = i; btn.textContent = txt; bd.appendChild(btn);
             });
             let db = document.createElement("button"); db.type = "button"; db.className = "del-btn"; db.dataset.act = "del"; db.dataset.idx = i; db.textContent = "删除"; bd.appendChild(db);
-            p.appendChild(sd); p.appendChild(bd); box.appendChild(p);
+            p.appendChild(sd); p.appendChild(bd); 
+            
+            // 将详情卡片直接覆盖在弹窗中间
+            box.appendChild(p);
         }
     });
 }
-document.getElementById("historyList").onclick = e => { let b=e.target.closest("button[data-act]"); if(!b)return; let i=parseInt(b.dataset.idx), a=b.dataset.act; if(a==="p2")setPen(i,"+2"); else if(a==="dnf")setPen(i,"DNF"); else if(a==="clear")setPen(i,""); else delRec(i); };
+document.getElementById("historyList").onclick = e => { 
+    let b=e.target.closest("button[data-act]"); if(!b)return; 
+    let i=parseInt(b.dataset.idx), a=b.dataset.act; 
+    if(a==="p2")setPen(i,"+2"); else if(a==="dnf")setPen(i,"DNF"); else if(a==="clear")setPen(i,""); else delRec(i); 
+};
 document.getElementById("clearRecordsBtn").onclick = () => { if(confirm("清空当前记录？")){ safeLS.remove(gKey()); sIdx=null; renderHist(); } };
 
-document.querySelectorAll(".tab button").forEach(b => { b.onclick = () => { document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".page").forEach(p=>p.style.display="none"); document.getElementById(b.dataset.tab).style.display="block"; }; });
-
+// 公式库渲染逻辑
 function buildFormulaUI() {
     const container = document.getElementById("dynamicFormulaUI");
     while (container.firstChild) container.removeChild(container.firstChild);
@@ -374,7 +544,7 @@ function renderFormulaList(raw, containerDiv, puzzleType) {
                     let tp = document.createElement("twisty-player"); 
                     tp.setAttribute("puzzle", puzzleType);
                     tp.setAttribute("experimental-setup-alg", s);
-                    // 核心修复：删除 anchor="end"，让它默认按照标准的逆 case 渲染！
+                    // 使用默认的 anchor（start），直接展示逆 case
                     tp.setAttribute("alg", cleanAlg);
                     tp.setAttribute("control-panel","playback"); 
                     tp.setAttribute("autoplay","false"); 

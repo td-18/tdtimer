@@ -13,6 +13,7 @@ body{
     background: linear-gradient(135deg, #f0f6fc 0%, #ffffff 50%, #e6f2fd 100%);
     color:#111; min-height:100vh; padding:20px 20px 40px;
     touch-action:manipulation; overflow-x: hidden;
+    user-select: none; -webkit-user-select: none; /* 防止长按选中文本 */
 }
 h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bottom: 8px; letter-spacing: 1px;}
 
@@ -43,7 +44,6 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 
 /* ===== 计时页面布局 ===== */
 .timer-layout { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 20px; }
-/* 左侧栏 */
 .left-col { width: 320px; display: flex; flex-direction: column; gap: 15px; }
 
 /* 15S 观察复选框 */
@@ -63,7 +63,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 #statPanel td { padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-variant-numeric: tabular-nums;}
 #statPanel td:first-child { text-align: left; padding-left: 10px; font-weight: bold; color: #555;}
 
-/* 成绩弹窗 (覆盖层) */
+/* 成绩弹窗 */
 #historyBox {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4);
     display: none; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(3px);
@@ -84,7 +84,6 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 .history-item .raw-time { color: #888; font-size: 12px; margin-left: 8px;}
 .history-item .date-text { color: #999; font-size: 13px;}
 
-/* 详情弹出卡片 (覆盖在弹窗最上层) */
 .penalty-panel {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); 
@@ -97,13 +96,11 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 /* 右侧区域 */
 .right-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 300px; position: relative;}
 
-/* 打乱公式与 Next 按钮 */
 .scramble-wrap { position: relative; width: 100%; text-align: center; margin-bottom: 20px; padding: 0 40px;}
 .scramble { font-size: 16px; font-weight: bold; color: #0f2341; line-height: 1.5; letter-spacing: 0.5px;}
 #newScrambleBtn { position: absolute; right: 0; bottom: -10px; background: none; border: none; color: #1b5eb5; font-size: 14px; font-weight: bold; cursor: pointer; transition: color 0.2s;}
 #newScrambleBtn:hover { color: #0f2341;}
 
-/* 主计时器 */
 #timerWrap { text-align: center; margin: 10px 0 20px; user-select: none; -webkit-user-select: none;}
 #timeDisplay { font-size: clamp(70px, 12vw, 100px); font-weight: 900; color: #0f2341; font-variant-numeric: tabular-nums; letter-spacing: -2px;}
 #timeDisplay.ready { color: #ffbb00; }
@@ -111,7 +108,6 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 #timeDisplay.observe { color: #dd2222; }
 #tipText { display: none; } 
 
-/* 3D 视图 */
 #scrambleViewer { width: 240px; height: 240px; margin-top: 10px;}
 
 /* ===== 公式库区域 ===== */
@@ -132,7 +128,6 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 .formulaItem b { color: #0f2341; display: inline-block; width: 80px;}
 .twistContainer { margin-top: 10px; height: 200px; display: flex; justify-content: center;}
 
-/* 移动端适配 */
 @media (max-width: 768px) {
     .timer-layout { flex-direction: column-reverse; align-items: center;}
     .left-col { width: 100%; align-items: center; padding-top: 30px;}
@@ -146,7 +141,6 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 <header>
     <h1>TDtimer</h1>
     <div class="top-bar">
-        <!-- 标准蓝牙 SVG 图标 -->
         <button id="navBluetooth" title="蓝牙">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f2341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M7 7l10 10-5 5V2l5 5L7 17"></path>
@@ -198,7 +192,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     </table>
                 </div>
 
-                <!-- 成绩弹窗 (点击成绩按钮后弹出) -->
+                <!-- 成绩弹窗 -->
                 <div id="historyBox">
                     <div class="history-card" onclick="event.stopPropagation()">
                         <div class="history-head">
@@ -242,7 +236,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
         <div id="dynamicFormulaUI"></div>
     </section>
 
-    <!-- 蓝牙页面 (隐藏，点击顶部图标跳转) -->
+    <!-- 蓝牙页面 -->
     <section id="bluetooth" class="page" style="display:none">
         <h3 style="text-align:center; color:#555; padding:50px;">蓝牙功能待开发...</h3>
     </section>
@@ -309,7 +303,6 @@ async function genScr() {
 }
 function setS(str, fb) { curScr = str; sText.textContent = str; if (sCube) sCube.setAttribute("alg",str); wMsg.style.display = fb ? "block" : "none"; if(fb) wMsg.textContent = "⚠️ 降级：本地打乱"; }
 
-// 导航与切换逻辑
 document.getElementById("navBluetooth").onclick = () => {
     document.querySelectorAll(".tab button").forEach(x=>x.classList.remove("active"));
     document.querySelectorAll(".page").forEach(p=>p.style.display="none");
@@ -324,11 +317,9 @@ document.querySelectorAll(".tab button").forEach(b => {
     }; 
 });
 
-// 15s 观察复选框
 let oOn = false;
 document.getElementById("observeCheckbox").onchange = (e) => { oOn = e.target.checked; };
 
-// 统计与成绩弹窗切换
 document.getElementById("btnStatTab").onclick = () => {
     document.getElementById("btnStatTab").classList.add("active");
     document.getElementById("btnHistoryTab").classList.remove("active");
@@ -337,7 +328,7 @@ document.getElementById("btnStatTab").onclick = () => {
 document.getElementById("btnHistoryTab").onclick = () => {
     document.getElementById("btnHistoryTab").classList.add("active");
     document.getElementById("btnStatTab").classList.remove("active");
-    document.getElementById("historyBox").style.display = "flex"; // 显示弹窗
+    document.getElementById("historyBox").style.display = "flex"; 
     renderHist();
 };
 document.getElementById("closeHistoryBtn").onclick = () => {
@@ -345,12 +336,10 @@ document.getElementById("closeHistoryBtn").onclick = () => {
     document.getElementById("btnStatTab").classList.add("active");
     document.getElementById("btnHistoryTab").classList.remove("active");
 };
-// 点击弹窗外侧关闭
 document.getElementById("historyBox").onclick = (e) => {
     if(e.target.id === "historyBox") document.getElementById("closeHistoryBtn").click();
 };
 
-// 训练与项目下拉
 const btnTrainOLL = document.getElementById("btnTrainOLL"), btnTrainPLL = document.getElementById("btnTrainPLL"), btnTrain2x2 = document.getElementById("btnTrain2x2"), btnStopTrain = document.getElementById("btnStopTrain");
 function startTrain(p, c) {
     trainMode = [p, c];
@@ -388,9 +377,13 @@ mBtn.onclick = e => { e.stopPropagation(); isDrop = !isDrop; dList.classList.tog
 document.addEventListener("click", () => { if (isDrop) { isDrop = false; dList.classList.remove("show"); } });
 document.getElementById("newScrambleBtn").onclick = () => genScr();
 
-// 计时逻辑
+// ==========================================
+// 核心升级：将计时触发器扩展至全页面空白区
+// ==========================================
 let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, isOver = false, pStT = 0, wasIdle = false;
-const tDom = document.getElementById("timeDisplay"), tWrap = document.getElementById("timerWrap");
+let isPressingTimer = false; // 记录是否是在空白区域按下的
+const tDom = document.getElementById("timeDisplay");
+
 function clrT() { if(raf){cancelAnimationFrame(raf);raf=null;} if(rTimer){clearTimeout(rTimer);rTimer=null;} if(oTimer){clearInterval(oTimer);oTimer=null;} }
 function reset() { clrT(); tState = "idle"; isOver = false; tDom.className = ""; tDom.textContent = "0.00"; }
 function startT() { clrT(); stT = Date.now(); tState = "running"; tDom.className = ""; const lp = () => { if(tState!=="running")return; tDom.textContent = ((Date.now()-stT)/1000).toFixed(2); raf = requestAnimationFrame(lp); }; lp(); }
@@ -399,12 +392,51 @@ function startO() { clrT(); tState = "observe"; oStT = Date.now(); isOver = fals
 function bPress() { clrT(); if(tState==="running"){ stopT(); return; } if(tState==="idle"||tState==="observe"){ pStT=Date.now(); tState="readyCount"; tDom.className="ready"; if(wasIdle) tDom.textContent="0.00"; rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); } }
 function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ if (h<800 && wasIdle && oOn) { reset(); startO(); } else { tState = "idle"; tDom.className = ""; } } }
 
-tWrap.addEventListener("touchstart", e => { e.preventDefault(); wasIdle = (tState === "idle"); bPress(); }, { passive: false });
-tWrap.addEventListener("touchend", e => { e.preventDefault(); if (tState !== "running") ePress(); }, { passive: false });
-tWrap.addEventListener("mousedown", e => { if (e.button !== 0) return; e.preventDefault(); wasIdle = (tState === "idle"); bPress(); });
-tWrap.addEventListener("mouseup", e => { if (e.button !== 0) return; e.preventDefault(); if (tState !== "running") ePress(); });
-document.addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); if (e.repeat) return; wasIdle = (tState === "idle"); bPress(); } });
-document.addEventListener("keyup", e => { if (e.code === "Space") { e.preventDefault(); if (tState !== "running") ePress(); } });
+// 判断是否点击了交互控件（如果是，则拦截计时触发）
+function isInteractive(target) {
+    return target.closest('button') || 
+           target.closest('input') || 
+           target.closest('label') || 
+           target.closest('.puzzleOption') || 
+           target.closest('#historyBox') || 
+           target.closest('#formula') || 
+           target.closest('#bluetooth');
+}
+
+// 鼠标事件
+document.addEventListener("mousedown", e => { 
+    if (e.button !== 0) return; 
+    if (isInteractive(e.target)) return; // 点击按钮时不触发
+    isPressingTimer = true;
+    wasIdle = (tState === "idle"); 
+    bPress(); 
+});
+document.addEventListener("mouseup", e => { 
+    if (e.button !== 0) return; 
+    if (isPressingTimer) {
+        isPressingTimer = false;
+        if (tState !== "running") ePress(); 
+    }
+});
+
+// 触摸事件 (passive: true 保证页面正常滑动，不卡顿)
+document.addEventListener("touchstart", e => { 
+    if (isInteractive(e.target)) return;
+    isPressingTimer = true;
+    wasIdle = (tState === "idle"); 
+    bPress(); 
+}, { passive: true });
+document.addEventListener("touchend", e => { 
+    if (isPressingTimer) {
+        isPressingTimer = false;
+        if (tState !== "running") ePress(); 
+    }
+});
+
+// 键盘事件
+document.addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); if (e.repeat) return; isPressingTimer = true; wasIdle = (tState === "idle"); bPress(); } });
+document.addEventListener("keyup", e => { if (e.code === "Space") { e.preventDefault(); if (isPressingTimer) { isPressingTimer = false; if (tState !== "running") ePress(); } } });
+
 
 // 成绩记录渲染
 let sIdx = null; 
@@ -443,7 +475,7 @@ function renderHist() {
         
         if(sIdx === i) {
             let p = document.createElement("div"); p.className = "penalty-panel";
-            p.onclick = e => e.stopPropagation(); // 阻止冒泡
+            p.onclick = e => e.stopPropagation(); 
             let sd = document.createElement("div"); sd.className = "scramble-text"; sd.textContent = x.scramble;
             let bd = document.createElement("div");
             [["p2","+2"],["dnf","DNF"],["clear","清除"]].forEach(([act, txt]) => {
@@ -451,8 +483,6 @@ function renderHist() {
             });
             let db = document.createElement("button"); db.type = "button"; db.className = "del-btn"; db.dataset.act = "del"; db.dataset.idx = i; db.textContent = "删除"; bd.appendChild(db);
             p.appendChild(sd); p.appendChild(bd); 
-            
-            // 将详情卡片直接覆盖在弹窗中间
             box.appendChild(p);
         }
     });
@@ -553,7 +583,6 @@ function renderFormulaList(raw, containerDiv, puzzleType) {
                     let tp = document.createElement("twisty-player"); 
                     tp.setAttribute("puzzle", puzzleType);
                     tp.setAttribute("experimental-setup-alg", s);
-                    // 使用默认的 anchor（start），直接展示逆 case
                     tp.setAttribute("alg", cleanAlg);
                     tp.setAttribute("control-panel","playback"); 
                     tp.setAttribute("autoplay","false"); 

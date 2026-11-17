@@ -63,33 +63,29 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 #statPanel td { padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-variant-numeric: tabular-nums;}
 #statPanel td:first-child { text-align: left; padding-left: 10px; font-weight: bold; color: #555;}
 
-/* 成绩弹窗 */
-#historyBox {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4);
-    display: none; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(3px);
-}
-.history-card {
-    background: #fff; width: 90%; max-width: 400px; border-radius: 16px; padding: 20px; max-height: 80vh; display: flex; flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;
-}
-.history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
-.history-head h3 { color: #0f2341; }
-#clearRecordsBtn { background: #fff2f2; color: #c82423; border: 1px solid #ffcccc; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold;}
-#historyList { overflow-y: auto; flex: 1;}
-.history-item { padding: 12px 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; cursor: pointer; font-size: 16px; border-radius: 8px; transition: background 0.2s;}
+/* 成绩面板 (直接嵌在左侧，不再弹窗) */
+#historyPanel { display: none; flex-direction: column; padding: 10px; max-height: 400px; overflow-y: auto;}
+.history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
+#clearRecordsBtn { background: #fff2f2; color: #c82423; border: 1px solid #ffcccc; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;}
+.history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; cursor: pointer; font-size: 15px; border-radius: 6px; transition: background 0.2s;}
 .history-item:hover { background: #f0f5fa;}
 .history-item .history-time { font-weight: bold; font-family: monospace;}
 .history-item .history-time .penalty.p2 { color: #e08a00; margin-left: 5px;}
 .history-item .history-time .penalty.dnf { color: #c82423; margin-left: 5px;}
 .history-item .raw-time { color: #888; font-size: 12px; margin-left: 8px;}
-.history-item .date-text { color: #999; font-size: 13px;}
+.history-item .date-text { color: #888; font-size: 12px;}
 
-.penalty-panel {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); 
-    z-index: 1000; width: 90%; word-break: break-all; border: 2px solid #1b5eb5;
+/* 详情弹窗 (仅点击成绩时出现，不需要全屏遮罩) */
+#detailModal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+    z-index: 1000; width: 90%; max-width: 350px; word-break: break-all; border: 2px solid #1b5eb5;
+    display: none; flex-direction: column;
 }
-.penalty-panel .scramble-text { font-family: monospace; color: #555; margin-bottom: 15px; font-size: 14px; line-height: 1.5;}
+#detailModal.show { display: flex; }
+.detail-close { position: absolute; right: 10px; top: 10px; background: none; border: none; font-size: 20px; cursor: pointer; color: #999;}
+.detail-scramble { font-family: monospace; color: #0f2341; margin: 15px 0; font-size: 14px; line-height: 1.6; padding: 10px; background: #f8fbff; border-radius: 6px;}
+.detail-date { color: #888; font-size: 13px; margin-bottom: 15px;}
 .penalty-btn, .del-btn { margin: 5px 5px 0 0; padding: 8px 15px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-weight: bold;}
 .del-btn { border-color: #ffcccc; background: #fff2f2; color: #c82423;}
 
@@ -167,7 +163,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
     <!-- 计时页面 -->
     <section id="timer" class="page">
         <div class="timer-layout">
-            <!-- 左侧：观察 + 统计 -->
+            <!-- 左侧：观察 + 统计/成绩 -->
             <div class="left-col">
                 <div class="observe-wrap">
                     <label>
@@ -181,7 +177,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     <button type="button" id="btnHistoryTab">成绩</button>
                 </div>
 
-                <!-- 统计面板表格 -->
+                <!-- 统计面板 (直接显示) -->
                 <div id="statPanel">
                     <table>
                         <tr><th>单次</th><th>当前</th><th>最佳</th></tr>
@@ -192,18 +188,13 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     </table>
                 </div>
 
-                <!-- 成绩弹窗 -->
-                <div id="historyBox">
-                    <div class="history-card" onclick="event.stopPropagation()">
-                        <div class="history-head">
-                            <h3>成绩记录</h3>
-                            <div>
-                                <button type="button" id="closeHistoryBtn" style="background:none;border:none;font-size:20px;cursor:pointer;margin-right:10px;color:#555;">×</button>
-                                <button type="button" id="clearRecordsBtn">清空</button>
-                            </div>
-                        </div>
-                        <div id="historyList"></div>
+                <!-- 成绩面板 (替换统计位置显示) -->
+                <div id="historyPanel">
+                    <div class="history-head">
+                        <span style="font-size:13px; color:#888;">点击记录可查看打乱及惩罚</span>
+                        <button type="button" id="clearRecordsBtn">清空</button>
                     </div>
+                    <div id="historyList"></div>
                 </div>
             </div>
 
@@ -224,6 +215,20 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
             </div>
         </div>
     </section>
+
+    <!-- 详情弹窗 (点击某一条成绩时出现) -->
+    <div id="detailModal">
+        <button class="detail-close" id="closeDetailBtn">×</button>
+        <h3 style="color:#0f2341; font-size:18px;">成绩详情</h3>
+        <div class="detail-scramble" id="detailScramble">打乱公式...</div>
+        <div class="detail-date" id="detailDate">日期...</div>
+        <div id="detailPenaltyBtns">
+            <button type="button" class="penalty-btn" data-act="p2">+2</button>
+            <button type="button" class="penalty-btn" data-act="dnf">DNF</button>
+            <button type="button" class="penalty-btn" data-act="clear">清除</button>
+            <button type="button" class="del-btn" data-act="del">删除</button>
+        </div>
+    </div>
 
     <!-- 公式库页面 -->
     <section id="formula" class="page" style="display:none">
@@ -320,24 +325,19 @@ document.querySelectorAll(".tab button").forEach(b => {
 let oOn = false;
 document.getElementById("observeCheckbox").onchange = (e) => { oOn = e.target.checked; };
 
+// 统计与成绩 Tab 切换
 document.getElementById("btnStatTab").onclick = () => {
     document.getElementById("btnStatTab").classList.add("active");
     document.getElementById("btnHistoryTab").classList.remove("active");
-    document.getElementById("historyBox").style.display = "none";
+    document.getElementById("statPanel").style.display = "block";
+    document.getElementById("historyPanel").style.display = "none";
 };
 document.getElementById("btnHistoryTab").onclick = () => {
     document.getElementById("btnHistoryTab").classList.add("active");
     document.getElementById("btnStatTab").classList.remove("active");
-    document.getElementById("historyBox").style.display = "flex"; 
+    document.getElementById("statPanel").style.display = "none";
+    document.getElementById("historyPanel").style.display = "flex";
     renderHist();
-};
-document.getElementById("closeHistoryBtn").onclick = () => {
-    document.getElementById("historyBox").style.display = "none";
-    document.getElementById("btnStatTab").classList.add("active");
-    document.getElementById("btnHistoryTab").classList.remove("active");
-};
-document.getElementById("historyBox").onclick = (e) => {
-    if(e.target.id === "historyBox") document.getElementById("closeHistoryBtn").click();
 };
 
 const btnTrainOLL = document.getElementById("btnTrainOLL"), btnTrainPLL = document.getElementById("btnTrainPLL"), btnTrain2x2 = document.getElementById("btnTrain2x2"), btnStopTrain = document.getElementById("btnStopTrain");
@@ -378,10 +378,10 @@ document.addEventListener("click", () => { if (isDrop) { isDrop = false; dList.c
 document.getElementById("newScrambleBtn").onclick = () => genScr();
 
 // ==========================================
-// 核心升级：将计时触发器扩展至全页面空白区
+// 核心升级：全屏空白区域长按计时 (智能拦截)
 // ==========================================
 let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, isOver = false, pStT = 0, wasIdle = false;
-let isPressingTimer = false; // 记录是否是在空白区域按下的
+let isPressingTimer = false; 
 const tDom = document.getElementById("timeDisplay");
 
 function clrT() { if(raf){cancelAnimationFrame(raf);raf=null;} if(rTimer){clearTimeout(rTimer);rTimer=null;} if(oTimer){clearInterval(oTimer);oTimer=null;} }
@@ -392,62 +392,31 @@ function startO() { clrT(); tState = "observe"; oStT = Date.now(); isOver = fals
 function bPress() { clrT(); if(tState==="running"){ stopT(); return; } if(tState==="idle"||tState==="observe"){ pStT=Date.now(); tState="readyCount"; tDom.className="ready"; if(wasIdle) tDom.textContent="0.00"; rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); } }
 function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ if (h<800 && wasIdle && oOn) { reset(); startO(); } else { tState = "idle"; tDom.className = ""; } } }
 
-// 判断是否点击了交互控件（如果是，则拦截计时触发）
 function isInteractive(target) {
-    return target.closest('button') || 
-           target.closest('input') || 
-           target.closest('label') || 
-           target.closest('.puzzleOption') || 
-           target.closest('#historyBox') || 
-           target.closest('#formula') || 
-           target.closest('#bluetooth');
+    return target.closest('button') || target.closest('input') || target.closest('label') || target.closest('.puzzleOption') || target.closest('#detailModal') || target.closest('#formula') || target.closest('#bluetooth');
 }
 
-// 鼠标事件
-document.addEventListener("mousedown", e => { 
-    if (e.button !== 0) return; 
-    if (isInteractive(e.target)) return; // 点击按钮时不触发
-    isPressingTimer = true;
-    wasIdle = (tState === "idle"); 
-    bPress(); 
-});
-document.addEventListener("mouseup", e => { 
-    if (e.button !== 0) return; 
-    if (isPressingTimer) {
-        isPressingTimer = false;
-        if (tState !== "running") ePress(); 
-    }
-});
-
-// 触摸事件 (passive: true 保证页面正常滑动，不卡顿)
-document.addEventListener("touchstart", e => { 
-    if (isInteractive(e.target)) return;
-    isPressingTimer = true;
-    wasIdle = (tState === "idle"); 
-    bPress(); 
-}, { passive: true });
-document.addEventListener("touchend", e => { 
-    if (isPressingTimer) {
-        isPressingTimer = false;
-        if (tState !== "running") ePress(); 
-    }
-});
-
-// 键盘事件
+document.addEventListener("mousedown", e => { if (e.button !== 0) return; if (isInteractive(e.target)) return; isPressingTimer = true; wasIdle = (tState === "idle"); bPress(); });
+document.addEventListener("mouseup", e => { if (e.button !== 0) return; if (isPressingTimer) { isPressingTimer = false; if (tState !== "running") ePress(); } });
+document.addEventListener("touchstart", e => { if (isInteractive(e.target)) return; isPressingTimer = true; wasIdle = (tState === "idle"); bPress(); }, { passive: true });
+document.addEventListener("touchend", e => { if (isPressingTimer) { isPressingTimer = false; if (tState !== "running") ePress(); } });
 document.addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); if (e.repeat) return; isPressingTimer = true; wasIdle = (tState === "idle"); bPress(); } });
 document.addEventListener("keyup", e => { if (e.code === "Space") { e.preventDefault(); if (isPressingTimer) { isPressingTimer = false; if (tState !== "running") ePress(); } } });
 
-
-// 成绩记录渲染
-let sIdx = null; 
+// ==========================================
+// 成绩记录渲染与详情弹窗
+// ==========================================
+let activeHistoryIdx = null;
 const gKey = () => "td_records_" + (trainMode ? trainMode.join('_') : curP.key); 
-function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); if(document.getElementById("historyBox").style.display === "flex") renderHist(); }
+
+function saveRec(t,s,p){ let r=safeLS.get(gKey()); r.unshift({time:t,scramble:s,penalty:p,date:new Date().toLocaleString()}); safeLS.set(gKey(),r); if(document.getElementById("historyPanel").style.display === "flex") renderHist(); }
 function setPen(i,p){ let r=safeLS.get(gKey()); if(r[i]){ r[i].penalty=p; safeLS.set(gKey(),r); renderHist(); } }
-function delRec(i){ let r=safeLS.get(gKey()); r.splice(i,1); sIdx=null; safeLS.set(gKey(),r); renderHist(); }
+function delRec(i){ let r=safeLS.get(gKey()); r.splice(i,1); activeHistoryIdx=null; safeLS.set(gKey(),r); renderHist(); }
 function calcA(recs,n){ if(recs.length<n)return null; let v=recs.slice(0,n).map(r=>r.penalty==="DNF"?null:r.time+(r.penalty==="+2"?2000:0)); if(v.includes(null))return null; v.sort((a,b)=>a-b); return v.slice(1,-1).reduce((a,b)=>a+b,0)/(n-2); }
 
 function renderHist() {
-    let r = safeLS.get(gKey()), box = document.getElementById("historyList"); while (box.firstChild) box.removeChild(box.firstChild);
+    let r = safeLS.get(gKey()), box = document.getElementById("historyList"); 
+    while (box.firstChild) box.removeChild(box.firstChild);
     
     // 更新左侧统计表
     let bst = r.length ? Math.min(...r.filter(x=>x.penalty!=="DNF").map(x=>x.time+(x.penalty==="+2"?2000:0))) : null;
@@ -463,36 +432,41 @@ function renderHist() {
             let ps = document.createElement("span"); ps.className = "penalty " + (x.penalty==='+2'?'p2':'dnf'); ps.textContent = x.penalty; ts.appendChild(ps);
             let rs = document.createElement("span"); rs.className = "raw-time"; rs.textContent = `(${(x.time/1000).toFixed(2)})`; ts.appendChild(rs);
         }
-        let ds = document.createElement("span"); ds.className = "date-text"; ds.textContent = x.date.split(' ')[0];
+        let ds = document.createElement("span"); ds.className = "date-text"; ds.textContent = x.date;
         d.appendChild(ts); d.appendChild(ds);
         
-        d.onclick = (e) => { 
-            e.stopPropagation(); 
-            sIdx = sIdx===i ? null : i; 
-            renderHist(); 
+        d.onclick = () => { 
+            activeHistoryIdx = i;
+            document.getElementById("detailScramble").textContent = x.scramble;
+            document.getElementById("detailDate").textContent = "记录时间: " + x.date;
+            document.getElementById("detailModal").classList.add("show");
         };
         box.appendChild(d);
-        
-        if(sIdx === i) {
-            let p = document.createElement("div"); p.className = "penalty-panel";
-            p.onclick = e => e.stopPropagation(); 
-            let sd = document.createElement("div"); sd.className = "scramble-text"; sd.textContent = x.scramble;
-            let bd = document.createElement("div");
-            [["p2","+2"],["dnf","DNF"],["clear","清除"]].forEach(([act, txt]) => {
-                let btn = document.createElement("button"); btn.type = "button"; btn.className = "penalty-btn"; btn.dataset.act = act; btn.dataset.idx = i; btn.textContent = txt; bd.appendChild(btn);
-            });
-            let db = document.createElement("button"); db.type = "button"; db.className = "del-btn"; db.dataset.act = "del"; db.dataset.idx = i; db.textContent = "删除"; bd.appendChild(db);
-            p.appendChild(sd); p.appendChild(bd); 
-            box.appendChild(p);
-        }
     });
 }
-document.getElementById("historyList").onclick = e => { 
-    let b=e.target.closest("button[data-act]"); if(!b)return; 
-    let i=parseInt(b.dataset.idx), a=b.dataset.act; 
-    if(a==="p2")setPen(i,"+2"); else if(a==="dnf")setPen(i,"DNF"); else if(a==="clear")setPen(i,""); else delRec(i); 
+
+document.getElementById("closeDetailBtn").onclick = () => {
+    document.getElementById("detailModal").classList.remove("show");
+    activeHistoryIdx = null;
 };
-document.getElementById("clearRecordsBtn").onclick = () => { if(confirm("清空当前记录？")){ safeLS.remove(gKey()); sIdx=null; renderHist(); } };
+
+document.getElementById("detailPenaltyBtns").onclick = (e) => {
+    let b = e.target.closest("button"); if(!b || activeHistoryIdx === null) return;
+    let act = b.dataset.act;
+    if(act==="p2") setPen(activeHistoryIdx, "+2");
+    else if(act==="dnf") setPen(activeHistoryIdx, "DNF");
+    else if(act==="clear") setPen(activeHistoryIdx, "");
+    else if(act==="del") { delRec(activeHistoryIdx); document.getElementById("closeDetailBtn").click(); return; }
+    
+    // 刷新弹窗内的信息展示
+    let r = safeLS.get(gKey());
+    if(r[activeHistoryIdx]) {
+        document.getElementById("detailScramble").textContent = r[activeHistoryIdx].scramble;
+        document.getElementById("detailDate").textContent = "记录时间: " + r[activeHistoryIdx].date;
+    }
+};
+
+document.getElementById("clearRecordsBtn").onclick = () => { if(confirm("清空当前记录？")){ safeLS.remove(gKey()); renderHist(); } };
 
 // 公式库渲染逻辑
 function buildFormulaUI() {

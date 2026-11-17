@@ -4,15 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>TDtimer</title>
-<!-- 公式数据文件 -->
 <script src="formulas.js"></script>
-<!-- 3D 渲染引擎 -->
 <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
 <style>
 /* ===== 基础重置与背景 ===== */
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif}
 body{
-    background: linear-gradient(135deg, #e0f0ff 0%, #ffffff 50%, #dceeff 100%);
+    background: linear-gradient(135deg, #f0f6fc 0%, #ffffff 50%, #e6f2fd 100%);
     color:#111; min-height:100vh; padding:20px 20px 40px;
     touch-action:manipulation; overflow-x: hidden;
 }
@@ -21,13 +19,14 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 /* ===== 顶部栏 (蓝牙 + 下拉菜单) ===== */
 .top-bar{display:flex; justify-content:center; align-items:center; gap:12px; margin-bottom: 20px;}
 #navBluetooth{
-    background:none; border:none; font-size:22px; cursor:pointer; color:#0f2341; 
-    width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:none; border:none; cursor:pointer; color:#0f2341; 
+    width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     transition: background 0.2s;
 }
 #navBluetooth:hover{background: rgba(0,0,0,0.05);}
 .puzzleDropdownWrap{position:relative; width:fit-content;}
-#puzzleMainBtn{padding:6px 20px; border:2px solid #cbdceb; background:#fff; border-radius:20px; font-size:14px; font-weight:bold; cursor:pointer; color:#0f2341; outline:none;}
+#puzzleMainBtn{padding:6px 24px; border:2px solid #cbdceb; background:#fff; border-radius:20px; font-size:14px; font-weight:bold; cursor:pointer; color:#0f2341; outline:none; transition: all 0.2s;}
+#puzzleMainBtn:hover{border-color:#a3c2e0;}
 #puzzleDropdownList{position:absolute; top:110%; left:50%; transform:translateX(-50%); width:max-content; min-width:120px; border:1px solid #ddd; background:#fff; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.1); display:none; z-index:99;}
 #puzzleDropdownList.show{display:block;}
 .puzzleOption{padding:10px 20px; cursor:pointer; text-align:center; font-size:14px;}
@@ -35,64 +34,64 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 .puzzleOption.active{background:#0f2341; color:#fff; border-radius:8px;}
 
 /* ===== 主导航 Tab ===== */
-.tab{display:flex; gap:8px; max-width: 800px; margin: 0 auto 20px; background: #fff; padding: 4px; border-radius: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);}
+.tab{display:flex; gap:8px; max-width: 800px; margin: 0 auto 25px; background: #fff; padding: 4px; border-radius: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);}
 .tab button{flex:1; padding:12px; border:none; background:transparent; border-radius: 26px; font-size:16px; font-weight:bold; color:#555; cursor:pointer; transition: all 0.3s;}
 .tab button.active{background:#1b5eb5; color:#fff;}
 
 /* ===== 页面容器 ===== */
 .page { max-width: 900px; margin: 0 auto; }
 
-/* ===== 计时页面布局 (左右分栏) ===== */
-.timer-layout {
-    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 20px;
-}
+/* ===== 计时页面布局 ===== */
+.timer-layout { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 20px; }
 /* 左侧栏 */
 .left-col { width: 320px; display: flex; flex-direction: column; gap: 15px; }
+
+/* 15S 观察复选框 */
 .observe-wrap { display: flex; align-items: center; gap: 8px; padding-left: 10px;}
-.observe-wrap button {
-    background: none; border: none; font-size: 15px; font-weight: bold; color:#0f2341; cursor: pointer; display:flex; align-items:center; gap:6px;
-}
+.observe-wrap label { font-size: 15px; font-weight: bold; color:#0f2341; cursor: pointer; display:flex; align-items:center; gap:8px;}
+.observe-wrap input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #1b5eb5;}
 
 /* 统计与成绩切换区 */
 .panel-toggle { display: flex; gap: 15px; padding-left: 10px;}
-.panel-toggle button { background: #fff; border: 1px solid #cbdceb; color:#0f2341; padding: 6px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer;}
+.panel-toggle button { background: #fff; border: 1px solid #cbdceb; color:#0f2341; padding: 6px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s;}
 .panel-toggle button.active { border-color: #1b5eb5; color: #1b5eb5; box-shadow: 0 0 0 2px rgba(27,94,181,0.1);}
 
 /* 统计面板 */
-#statPanel { background: transparent; padding: 10px; font-size: 14px; color:#333; line-height: 1.8;}
-#statPanel table { width: 100%; text-align: left; border-collapse: collapse;}
-#statPanel th { font-weight: normal; color:#666; padding-bottom: 5px; text-align: left;}
-#statPanel td { padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-variant-numeric: tabular-nums;}
+#statPanel { background: transparent; padding: 10px; font-size: 14px; color:#333; line-height: 1.8; display: block;}
+#statPanel table { width: 100%; text-align: center; border-collapse: collapse;}
+#statPanel th { font-weight: normal; color:#666; padding-bottom: 8px; font-size: 13px;}
+#statPanel td { padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-variant-numeric: tabular-nums;}
+#statPanel td:first-child { text-align: left; padding-left: 10px; font-weight: bold; color: #555;}
 
-/* 成绩列表 (点击后变成弹窗) */
+/* 成绩弹窗 (覆盖层) */
 #historyBox {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4);
     display: none; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(3px);
 }
 .history-card {
     background: #fff; width: 90%; max-width: 400px; border-radius: 16px; padding: 20px; max-height: 80vh; display: flex; flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;
 }
 .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
 .history-head h3 { color: #0f2341; }
-#clearRecordsBtn { background: #fff2f2; color: #c82423; border: 1px solid #ffcccc; padding: 6px 12px; border-radius: 8px; cursor: pointer;}
+#clearRecordsBtn { background: #fff2f2; color: #c82423; border: 1px solid #ffcccc; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold;}
 #historyList { overflow-y: auto; flex: 1;}
-.history-item { padding: 12px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; cursor: pointer; font-size: 16px;}
-.history-item:hover { background: #f9f9f9;}
+.history-item { padding: 12px 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; cursor: pointer; font-size: 16px; border-radius: 8px; transition: background 0.2s;}
+.history-item:hover { background: #f0f5fa;}
 .history-item .history-time { font-weight: bold; font-family: monospace;}
-.history-item .history-time .penalty.p2 { color: #e08a00; }
-.history-item .history-item .history-time .penalty.dnf { color: #c82423; }
+.history-item .history-time .penalty.p2 { color: #e08a00; margin-left: 5px;}
+.history-item .history-time .penalty.dnf { color: #c82423; margin-left: 5px;}
 .history-item .raw-time { color: #888; font-size: 12px; margin-left: 8px;}
 .history-item .date-text { color: #999; font-size: 13px;}
 
-/* 详情弹出卡片 (惩罚等) */
+/* 详情弹出卡片 (覆盖在弹窗最上层) */
 .penalty-panel {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); 
-    z-index: 1000; width: 85%; max-width: 320px; word-break: break-all;
+    background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); 
+    z-index: 1000; width: 90%; word-break: break-all; border: 2px solid #1b5eb5;
 }
-.penalty-panel .scramble-text { font-family: monospace; color: #555; margin-bottom: 15px; font-size: 14px;}
-.penalty-btn, .del-btn { margin: 5px 5px 0 0; padding: 8px 15px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer;}
+.penalty-panel .scramble-text { font-family: monospace; color: #555; margin-bottom: 15px; font-size: 14px; line-height: 1.5;}
+.penalty-btn, .del-btn { margin: 5px 5px 0 0; padding: 8px 15px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-weight: bold;}
 .del-btn { border-color: #ffcccc; background: #fff2f2; color: #c82423;}
 
 /* 右侧区域 */
@@ -101,7 +100,8 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 /* 打乱公式与 Next 按钮 */
 .scramble-wrap { position: relative; width: 100%; text-align: center; margin-bottom: 20px; padding: 0 40px;}
 .scramble { font-size: 16px; font-weight: bold; color: #0f2341; line-height: 1.5; letter-spacing: 0.5px;}
-#newScrambleBtn { position: absolute; right: 0; bottom: -10px; background: none; border: none; color: #1b5eb5; font-size: 14px; font-weight: bold; cursor: pointer;}
+#newScrambleBtn { position: absolute; right: 0; bottom: -10px; background: none; border: none; color: #1b5eb5; font-size: 14px; font-weight: bold; cursor: pointer; transition: color 0.2s;}
+#newScrambleBtn:hover { color: #0f2341;}
 
 /* 主计时器 */
 #timerWrap { text-align: center; margin: 10px 0 20px; user-select: none; -webkit-user-select: none;}
@@ -109,7 +109,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 #timeDisplay.ready { color: #ffbb00; }
 #timeDisplay.go { color: #22aa22; }
 #timeDisplay.observe { color: #dd2222; }
-#tipText { display: none; } /* 隐藏提示文字 */
+#tipText { display: none; } 
 
 /* 3D 视图 */
 #scrambleViewer { width: 240px; height: 240px; margin-top: 10px;}
@@ -146,7 +146,12 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 <header>
     <h1>TDtimer</h1>
     <div class="top-bar">
-        <button id="navBluetooth" title="蓝牙">📶</button>
+        <!-- 标准蓝牙 SVG 图标 -->
+        <button id="navBluetooth" title="蓝牙">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f2341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 7l10 10-5 5V2l5 5L7 17"></path>
+            </svg>
+        </button>
         <div class="puzzleDropdownWrap">
             <button type="button" id="puzzleMainBtn" aria-haspopup="menu" aria-expanded="false">三阶</button>
             <div id="puzzleDropdownList" role="menu">
@@ -171,7 +176,10 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
             <!-- 左侧：观察 + 统计 -->
             <div class="left-col">
                 <div class="observe-wrap">
-                    <button type="button" id="observeToggle">15S观察 □</button>
+                    <label>
+                        <input type="checkbox" id="observeCheckbox">
+                        15S观察
+                    </label>
                 </div>
                 
                 <div class="panel-toggle">
@@ -179,9 +187,10 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     <button type="button" id="btnHistoryTab">成绩</button>
                 </div>
 
+                <!-- 统计面板表格 -->
                 <div id="statPanel">
                     <table>
-                        <tr><th></th><th>当前</th><th>最佳</th></tr>
+                        <tr><th>单次</th><th>当前</th><th>最佳</th></tr>
                         <tr><td>单次</td><td id="bestSingle">-</td><td>-</td></tr>
                         <tr><td>mo3</td><td id="mo3">-</td><td>-</td></tr>
                         <tr><td>ao5</td><td id="ao5">-</td><td>-</td></tr>
@@ -189,13 +198,13 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     </table>
                 </div>
 
-                <!-- 成绩弹窗 (由按钮触发) -->
+                <!-- 成绩弹窗 (点击成绩按钮后弹出) -->
                 <div id="historyBox">
-                    <div class="history-card">
+                    <div class="history-card" onclick="event.stopPropagation()">
                         <div class="history-head">
                             <h3>成绩记录</h3>
                             <div>
-                                <button type="button" id="closeHistoryBtn" style="background:none;border:none;font-size:20px;cursor:pointer;margin-right:10px;">×</button>
+                                <button type="button" id="closeHistoryBtn" style="background:none;border:none;font-size:20px;cursor:pointer;margin-right:10px;color:#555;">×</button>
                                 <button type="button" id="clearRecordsBtn">清空</button>
                             </div>
                         </div>
@@ -214,7 +223,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 
                 <div id="timerWrap">
                     <div id="timeDisplay">0.00</div>
-                    <p id="tipText"></p> <!-- 已隐藏 -->
+                    <p id="tipText"></p>
                 </div>
 
                 <div id="scrambleViewer"></div>
@@ -233,7 +242,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
         <div id="dynamicFormulaUI"></div>
     </section>
 
-    <!-- 蓝牙页面 -->
+    <!-- 蓝牙页面 (隐藏，点击顶部图标跳转) -->
     <section id="bluetooth" class="page" style="display:none">
         <h3 style="text-align:center; color:#555; padding:50px;">蓝牙功能待开发...</h3>
     </section>
@@ -315,13 +324,9 @@ document.querySelectorAll(".tab button").forEach(b => {
     }; 
 });
 
-// 15s 观察的 UI 状态切换
+// 15s 观察复选框
 let oOn = false;
-const observeToggleBtn = document.getElementById("observeToggle");
-observeToggleBtn.onclick = () => { 
-    oOn = !oOn; 
-    observeToggleBtn.textContent = oOn ? "15S观察 ■" : "15S观察 □"; 
-};
+document.getElementById("observeCheckbox").onchange = (e) => { oOn = e.target.checked; };
 
 // 统计与成绩弹窗切换
 document.getElementById("btnStatTab").onclick = () => {
@@ -339,6 +344,10 @@ document.getElementById("closeHistoryBtn").onclick = () => {
     document.getElementById("historyBox").style.display = "none";
     document.getElementById("btnStatTab").classList.add("active");
     document.getElementById("btnHistoryTab").classList.remove("active");
+};
+// 点击弹窗外侧关闭
+document.getElementById("historyBox").onclick = (e) => {
+    if(e.target.id === "historyBox") document.getElementById("closeHistoryBtn").click();
 };
 
 // 训练与项目下拉

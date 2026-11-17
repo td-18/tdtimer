@@ -13,11 +13,11 @@ body{
     background: linear-gradient(135deg, #f0f6fc 0%, #ffffff 50%, #e6f2fd 100%);
     color:#111; min-height:100vh; padding:20px 20px 40px;
     touch-action:manipulation; overflow-x: hidden;
-    user-select: none; -webkit-user-select: none; /* 防止长按选中文本 */
+    user-select: none; -webkit-user-select: none;
 }
 h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bottom: 8px; letter-spacing: 1px;}
 
-/* ===== 顶部栏 (蓝牙 + 下拉菜单) ===== */
+/* ===== 顶部栏 ===== */
 .top-bar{display:flex; justify-content:center; align-items:center; gap:12px; margin-bottom: 20px;}
 #navBluetooth{
     background:none; border:none; cursor:pointer; color:#0f2341; 
@@ -63,7 +63,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 #statPanel td { padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-variant-numeric: tabular-nums;}
 #statPanel td:first-child { text-align: left; padding-left: 10px; font-weight: bold; color: #555;}
 
-/* 成绩面板 (直接嵌在左侧，不再弹窗) */
+/* 成绩面板 */
 #historyPanel { display: none; flex-direction: column; padding: 10px; max-height: 400px; overflow-y: auto;}
 .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
 #clearRecordsBtn { background: #fff2f2; color: #c82423; border: 1px solid #ffcccc; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;}
@@ -75,7 +75,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 .history-item .raw-time { color: #888; font-size: 12px; margin-left: 8px;}
 .history-item .date-text { color: #888; font-size: 12px;}
 
-/* 详情弹窗 (仅点击成绩时出现，不需要全屏遮罩) */
+/* 详情弹窗 */
 #detailModal {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
     background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
@@ -163,7 +163,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
     <!-- 计时页面 -->
     <section id="timer" class="page">
         <div class="timer-layout">
-            <!-- 左侧：观察 + 统计/成绩 -->
+            <!-- 左侧：观察 + 统计/成绩 (不触发计时) -->
             <div class="left-col">
                 <div class="observe-wrap">
                     <label>
@@ -177,7 +177,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     <button type="button" id="btnHistoryTab">成绩</button>
                 </div>
 
-                <!-- 统计面板 (直接显示) -->
+                <!-- 统计面板 -->
                 <div id="statPanel">
                     <table>
                         <tr><th>单次</th><th>当前</th><th>最佳</th></tr>
@@ -188,7 +188,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
                     </table>
                 </div>
 
-                <!-- 成绩面板 (替换统计位置显示) -->
+                <!-- 成绩面板 -->
                 <div id="historyPanel">
                     <div class="history-head">
                         <span style="font-size:13px; color:#888;">点击记录可查看打乱及惩罚</span>
@@ -216,7 +216,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
         </div>
     </section>
 
-    <!-- 详情弹窗 (点击某一条成绩时出现) -->
+    <!-- 详情弹窗 -->
     <div id="detailModal">
         <button class="detail-close" id="closeDetailBtn">×</button>
         <h3 style="color:#0f2341; font-size:18px;">成绩详情</h3>
@@ -230,7 +230,7 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
         </div>
     </div>
 
-    <!-- 公式库页面 -->
+    <!-- 公式库 -->
     <section id="formula" class="page" style="display:none">
         <div class="trainerPanel">
             <button type="button" id="btnTrainOLL">训练三阶OLL</button>
@@ -270,6 +270,21 @@ window.addEventListener('libReady', () => { isFail = false; genScr(); });
 const safeLS = { get: k => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }, set: (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch(e) {} }, remove: k => { try { localStorage.removeItem(k); } catch(e) {} } };
 function getRandomAUF() { let aufs = ["", "U ", "U' ", "U2 "]; return aufs[Math.floor(Math.random() * aufs.length)]; }
 
+// ==========================================
+// 核心升级：打乱公式的预加载（Prefetch）机制
+// ==========================================
+let preloadedScramble = null;
+let preloadedPuzzle = null; // 记录预取的是哪个项目
+
+async function prefetchScramble() {
+    if (!window.randomScrambleForEvent || isFail || trainMode) return;
+    try {
+        let a = await window.randomScrambleForEvent(curP.eventId);
+        preloadedScramble = a.toString();
+        preloadedPuzzle = curP.key;
+    } catch(e) { console.log("预取失败", e); }
+}
+
 async function genScr() {
     if (trainMode) {
         let pool = window.FormulaDB ? window.FormulaDB[trainMode[0]][trainMode[1]] : null;
@@ -297,14 +312,38 @@ async function genScr() {
         return;
     }
 
-    sText.textContent = "生成中..."; wMsg.style.display = "none";
     let k = curP.puzzle || curP.key, fb = fData[curP.eventId] || fData.default;
     if (!sCube && checkWebGL() && typeof customElements !== 'undefined' && customElements.get('twisty-player')) {
         try { sCube = document.createElement("twisty-player"); sCube.setAttribute("puzzle","3x3x3"); sCube.setAttribute("background","none"); sCube.setAttribute("control-panel","none"); sCubeWrap.appendChild(sCube); } catch(e) { sCube = null; }
     }
-    if (isFail || !window.randomScrambleForEvent) { setS(fb[Math.floor(Math.random()*fb.length)], true); if (sCube) sCube.setAttribute("puzzle",k); return; }
-    try { let a = await window.randomScrambleForEvent(curP.eventId); setS(a.toString(), false); if (sCube) sCube.setAttribute("puzzle",k); } 
-    catch(e) { setS(fb[Math.floor(Math.random()*fb.length)], true); if (sCube) sCube.setAttribute("puzzle",k); }
+    
+    // 如果离线，直接本地
+    if (isFail || !window.randomScrambleForEvent) { 
+        setS(fb[Math.floor(Math.random()*fb.length)], true); 
+        if (sCube) sCube.setAttribute("puzzle",k); 
+        return; 
+    }
+
+    // 如果预取池里有当前项目的打乱，直接使用！
+    if (preloadedScramble && preloadedPuzzle === curP.key) {
+        setS(preloadedScramble, false);
+        if (sCube) sCube.setAttribute("puzzle",k);
+        preloadedScramble = null; // 用掉后清空
+        prefetchScramble(); // 立刻在后台去算下一个
+        return;
+    }
+
+    // 如果没预取，只能现场算
+    sText.textContent = "生成中..."; wMsg.style.display = "none";
+    try { 
+        let a = await window.randomScrambleForEvent(curP.eventId); 
+        setS(a.toString(), false); 
+        if (sCube) sCube.setAttribute("puzzle",k); 
+        prefetchScramble(); 
+    } catch(e) { 
+        setS(fb[Math.floor(Math.random()*fb.length)], true); 
+        if (sCube) sCube.setAttribute("puzzle",k); 
+    }
 }
 function setS(str, fb) { curScr = str; sText.textContent = str; if (sCube) sCube.setAttribute("alg",str); wMsg.style.display = fb ? "block" : "none"; if(fb) wMsg.textContent = "⚠️ 降级：本地打乱"; }
 
@@ -325,7 +364,6 @@ document.querySelectorAll(".tab button").forEach(b => {
 let oOn = false;
 document.getElementById("observeCheckbox").onchange = (e) => { oOn = e.target.checked; };
 
-// 统计与成绩 Tab 切换
 document.getElementById("btnStatTab").onclick = () => {
     document.getElementById("btnStatTab").classList.add("active");
     document.getElementById("btnHistoryTab").classList.remove("active");
@@ -351,6 +389,7 @@ function startTrain(p, c) {
     document.querySelector('[data-tab="timer"]').classList.add("active");
     document.querySelectorAll(".page").forEach(p=>p.style.display="none"); 
     document.getElementById("timer").style.display="block";
+    preloadedScramble = null; // 清空预取
     genScr();
 }
 btnTrainOLL.onclick = () => startTrain('3x3', 'OLL');
@@ -361,6 +400,7 @@ btnStopTrain.onclick = () => {
     btnTrainOLL.classList.remove("active"); btnTrainPLL.classList.remove("active"); btnTrain2x2.classList.remove("active");
     btnStopTrain.style.display = "none";
     if (sCube) sCube.setAttribute("puzzle", curP.puzzle || curP.key);
+    preloadedScramble = null;
     genScr();
 };
 
@@ -369,6 +409,7 @@ optNodes.forEach((opt, i) => {
     const p = pList[i];
     opt.onclick = async () => {
         curP = p; isDrop = false; dList.classList.remove("show"); mBtn.setAttribute("aria-expanded", "false"); mBtn.textContent = curP.name; optNodes.forEach((o, j) => o.classList.toggle("active", i === j));
+        preloadedScramble = null; // 切换项目必须清空预取，否则打乱会错位
         if (trainMode) btnStopTrain.click(); 
         else { await genScr(); renderHist(); }
     };
@@ -378,7 +419,7 @@ document.addEventListener("click", () => { if (isDrop) { isDrop = false; dList.c
 document.getElementById("newScrambleBtn").onclick = () => genScr();
 
 // ==========================================
-// 核心升级：全屏空白区域长按计时 (智能拦截)
+// 核心升级：全屏空白长按 + 智能拦截
 // ==========================================
 let tState = "idle", stT = 0, raf = null, rTimer = null, oTimer = null, oStT = 0, isOver = false, pStT = 0, wasIdle = false;
 let isPressingTimer = false; 
@@ -392,8 +433,16 @@ function startO() { clrT(); tState = "observe"; oStT = Date.now(); isOver = fals
 function bPress() { clrT(); if(tState==="running"){ stopT(); return; } if(tState==="idle"||tState==="observe"){ pStT=Date.now(); tState="readyCount"; tDom.className="ready"; if(wasIdle) tDom.textContent="0.00"; rTimer=setTimeout(()=>{ if(tState==="readyCount"){ tState="ready"; tDom.className="go"; } },800); } }
 function ePress() { let h=Date.now()-pStT; clearTimeout(rTimer); if(tState==="ready") startT(); else if(tState==="readyCount"){ if (h<800 && wasIdle && oOn) { reset(); startO(); } else { tState = "idle"; tDom.className = ""; } } }
 
+// 关键拦截逻辑：排除左侧统计/成绩、按钮、输入框、弹窗等
 function isInteractive(target) {
-    return target.closest('button') || target.closest('input') || target.closest('label') || target.closest('.puzzleOption') || target.closest('#detailModal') || target.closest('#formula') || target.closest('#bluetooth');
+    return target.closest('button') || 
+           target.closest('input') || 
+           target.closest('label') || 
+           target.closest('.puzzleOption') || 
+           target.closest('#detailModal') || 
+           target.closest('.left-col') || /* 拦截左侧整个面板 */
+           target.closest('#formula') || 
+           target.closest('#bluetooth');
 }
 
 document.addEventListener("mousedown", e => { if (e.button !== 0) return; if (isInteractive(e.target)) return; isPressingTimer = true; wasIdle = (tState === "idle"); bPress(); });
@@ -418,7 +467,6 @@ function renderHist() {
     let r = safeLS.get(gKey()), box = document.getElementById("historyList"); 
     while (box.firstChild) box.removeChild(box.firstChild);
     
-    // 更新左侧统计表
     let bst = r.length ? Math.min(...r.filter(x=>x.penalty!=="DNF").map(x=>x.time+(x.penalty==="+2"?2000:0))) : null;
     ["mo3","ao5","ao12"].forEach((id,i)=>{ let v=calcA(r,i*2+3); document.getElementById(id).textContent = v ? (v/1000).toFixed(2) : "-"; });
     document.getElementById("bestSingle").textContent = isFinite(bst) ? (bst/1000).toFixed(2) : "-";
@@ -458,7 +506,6 @@ document.getElementById("detailPenaltyBtns").onclick = (e) => {
     else if(act==="clear") setPen(activeHistoryIdx, "");
     else if(act==="del") { delRec(activeHistoryIdx); document.getElementById("closeDetailBtn").click(); return; }
     
-    // 刷新弹窗内的信息展示
     let r = safeLS.get(gKey());
     if(r[activeHistoryIdx]) {
         document.getElementById("detailScramble").textContent = r[activeHistoryIdx].scramble;
@@ -468,7 +515,9 @@ document.getElementById("detailPenaltyBtns").onclick = (e) => {
 
 document.getElementById("clearRecordsBtn").onclick = () => { if(confirm("清空当前记录？")){ safeLS.remove(gKey()); renderHist(); } };
 
+// ==========================================
 // 公式库渲染逻辑
+// ==========================================
 function buildFormulaUI() {
     const container = document.getElementById("dynamicFormulaUI");
     while (container.firstChild) container.removeChild(container.firstChild);

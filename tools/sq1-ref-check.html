@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>SQ1 参考：twisty-player</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #eef3f9; margin: 20px; }
+  .row { display: flex; gap: 20px; flex-wrap: wrap; }
+  figure { margin: 0; background: #fff; border: 1px solid #cbdceb; border-radius: 10px; padding: 8px; }
+  twisty-player { width: 220px; height: 220px; display: block; }
+  figcaption { font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<pre id="geom" style="font-size:12px"></pre>
+<script type="module">
+import "https://cdn.cubing.net/v0/js/cubing/twisty";
+import { puzzles } from "https://cdn.cubing.net/v0/js/cubing/puzzles";
+
+const CASES = [
+  ["solved", ""],
+  ["kite/kite", "(1,0) / (0,-1) /"],
+  ["scallop", "(1,0) / (-1,-1) / (0,3) /"],
+];
+const row = document.getElementById("row");
+for (const [name, alg] of CASES) {
+  const fig = document.createElement("figure");
+  const p = document.createElement("twisty-player");
+  p.puzzle = "square1";
+  p.experimentalSetupAlg = alg;
+  p.alg = "";
+  p.hintFacelets = "none";
+  p.background = "none";
+  p.controlPanel = "none";
+  fig.appendChild(p);
+  const cap = document.createElement("figcaption");
+  cap.textContent = name;
+  fig.appendChild(cap);
+  row.appendChild(fig);
+}
+
+const kpuzzle = await puzzles.square1.kpuzzle();
+const def = kpuzzle.definition;
+document.getElementById("geom").textContent = JSON.stringify({
+  orbits: def.orbits,
+  moves: Object.keys(def.moves),
+}, null, 1);
+window.__ready = true;
+</script>
+</body>
+</html>

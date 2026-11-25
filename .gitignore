@@ -1,0 +1,12 @@
+node_modules/
+npm-debug.log*
+
+# 本地调试脚本（_dbg.mjs、_run222.mjs 这类用完即删的临时文件）
+_*.mjs
+_*.cjs
+
+# 工具运行时产物
+.openclaw-*
+
+# 离线备份包（建议放仓库外，这里只做兜底）
+*.bundle

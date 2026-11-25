@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WCA M1 3x3 check</title>
+<style>
+    body { font-family: ui-monospace, Consolas, monospace; padding: 20px; background: #0f172a; color: #d1fae5; }
+    h1 { font-size: 18px; color: #f8fafc; }
+    pre { white-space: pre-wrap; line-height: 1.6; }
+    .fail { color: #fca5a5; }
+    .pass { color: #86efac; }
+    .info { color: #93c5fd; }
+</style>
+</head>
+<body>
+<h1>WCA M1 · 3x3 solver check</h1>
+<pre id="out">running...</pre>
+
+<script type="module">
+import {
+    ScrambleService,
+    validateScramble,
+} from "../src/scramble/wca/index.js";
+import {
+    CubieCube,
+    applyMoves,
+    invertMoves,
+    isSolved,
+    movesToString,
+    randomCube,
+    simplifyMoves,
+    stringToMoves,
+} from "../src/scramble/wca/puzzles/333/cubie.js";
+import { getTables } from "../src/scramble/wca/puzzles/333/tables.js";
+import { solveCube, verifyScramble, verifySolution } from "../src/scramble/wca/puzzles/333/search.js";
+
+const out = document.getElementById("out");
+const lines = [];
+window.__M1_RESULTS__ = lines;
+
+function eq(actual, expected, label) {
+    if (actual !== expected) {
+        throw new Error(`${label || "eq"}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+    }
+}
+
+function truthy(value, label) {
+    if (!value) throw new Error(label || "expected truthy");
+}
+
+function info(text) {
+    lines.push(`INFO ${text}`);
+}
+
+async function check(name, fn) {
+    try {
+        await fn();
+        lines.push(`PASS ${name}`);
+    } catch (error) {
+        lines.push(`FAIL ${name}: ${error && error.message ? error.message : error}`);
+    }
+}
+
+let tables = null;
+
+await check("move model: sexy x6 / U x4 / inverse roundtrip", () => {
+    const identity = new CubieCube();
+    let sexy = identity;
+    const sexyMoves = stringToMoves("R U R' U'");
+    for (let i = 0; i < 6; i++) sexy = applyMoves(sexy, sexyMoves);
+    truthy(isSolved(sexy), "sexy move x6 should be solved");
+
+    let u4 = identity;
+    for (let i = 0; i < 4; i++) u4 = applyMoves(u4, stringToMoves("U"));
+    truthy(isSolved(u4), "U x4 should be solved");
+
+    const moves = stringToMoves("R U2 F' L D B2");
+    const scrambled = applyMoves(identity, moves);
+    const roundtrip = applyMoves(scrambled, invertMoves(moves));
+    truthy(isSolved(roundtrip), "inverse should solve");
+});
+
+await check("tables: build and full coverage", async () => {
+    tables = await getTables();
+    info(`tableBuildMs=${Math.round(tables.buildMs)}`);
+});
+
+await check("solver: 12 random states", async () => {
+    truthy(tables, "tables not built");
+    const lengths = [];
+    const times = [];
+    let verified = 0;
+    for (let i = 0; i < 12; i++) {
+        const cube = randomCube();
+        const t0 = performance.now();
+        const solution = solveCube(cube, tables, {
+            maxTotal: 21,
+            maxPhase1Depth: 13,
+            maxPhase1Solutions: 64,
+            nodeLimit: 8000000,
+            timeLimitMs: 1500,
+        });
+        const ms = performance.now() - t0;
+        times.push(ms);
+        if (!solution) throw new Error(`state ${i}: no solution`);
+
+        const scrambleMoves = simplifyMoves(invertMoves(solution.moves));
+        const okSolution = verifySolution(cube, solution.moves);
+        const okScramble = verifyScramble(cube, scrambleMoves);
+        if (!okSolution || !okScramble) {
+            throw new Error(`state ${i}: verification failed (solution=${okSolution}, scramble=${okScramble})`);
+        }
+        verified++;
+        lengths.push(scrambleMoves.length);
+    }
+    const avg = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+    info(`solver lengths=[${lengths.join(",")}] avg=${avg.toFixed(2)} max=${Math.max(...lengths)}`);
+    info(`solver time avg=${(times.reduce((a, b) => a + b, 0) / times.length).toFixed(0)}ms max=${Math.max(...times).toFixed(0)}ms verified=${verified}/12`);
+});
+
+await check("worker: 333 uses local provider", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        const t0 = performance.now();
+        const result = await service.generate("333");
+        const ms = performance.now() - t0;
+        eq(result.source, "worker", "333 source");
+        const validation = validateScramble("333", result.scrambles[0]);
+        truthy(validation.ok, "333 notation");
+        const length = result.scrambles[0].split(/\s+/).length;
+        truthy(length >= 2, "333 min length");
+        info(`333 source=${result.source} len=${length} ms=${Math.round(ms)} tableBuildMs=${Math.round(result.meta.tableBuildMs || 0)}`);
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: 333oh uses local provider", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        const result = await service.generate("333oh");
+        eq(result.source, "worker", "333oh source");
+        truthy(validateScramble("333oh", result.scrambles[0]).ok, "333oh notation");
+        info(`333oh len=${result.scrambles[0].split(/\s+/).length}`);
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: 333bf falls back to legacy orientation", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        const result = await service.generate("333bf");
+        eq(result.source, "legacy", "333bf source");
+        eq(result.meta.fallbackReason, "DELEGATE_LEGACY", "333bf reason");
+        truthy(validateScramble("333bf", result.scrambles[0]).ok, "333bf notation");
+        info(`333bf source=${result.source} reason=${result.meta.fallbackReason}`);
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: 5x 333 stability", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        const lengths = [];
+        const times = [];
+        for (let i = 0; i < 5; i++) {
+            const t0 = performance.now();
+            const result = await service.generate("333");
+            const ms = performance.now() - t0;
+            eq(result.source, "worker", `333 #${i} source`);
+            truthy(validateScramble("333", result.scrambles[0]).ok, `333 #${i} notation`);
+            lengths.push(result.scrambles[0].split(/\s+/).length);
+            times.push(ms);
+        }
+        info(`5x333 lengths=[${lengths.join(",")}] avg=${(lengths.reduce((a,b)=>a+b,0)/lengths.length).toFixed(2)} max=${Math.max(...lengths)}`);
+        info(`5x333 time avg=${(times.reduce((a,b)=>a+b,0)/times.length).toFixed(0)}ms max=${Math.max(...times).toFixed(0)}ms`);
+    } finally {
+        service.dispose();
+    }
+});
+
+const passed = lines.filter((line) => line.startsWith("PASS")).length;
+const failed = lines.filter((line) => line.startsWith("FAIL")).length;
+
+out.textContent = `${lines.join("\n")}\n\n${passed} passed, ${failed} failed`;
+out.className = failed ? "fail" : "pass";
+document.title = failed ? `FAIL (${failed})` : `PASS (${passed})`;
+</script>
+</body>
+</html>

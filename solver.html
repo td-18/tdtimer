@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>公式候选生成 · TDtimer</title>
+<style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif}
+    body{background:linear-gradient(135deg,#f0f6fc 0%,#ffffff 50%,#e6f2fd 100%);color:#111;min-height:100vh;padding:24px 16px 48px}
+    .wrap{max-width:780px;margin:0 auto}
+    h1{font-size:22px;font-weight:800;color:#0f2341;margin-bottom:6px;text-align:center;letter-spacing:1px}
+    .hint{font-size:13px;color:#5b6b7f;text-align:center;margin-bottom:18px;line-height:1.6}
+    .card{background:#fff;border:1px solid #dbe7f2;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(15,35,65,0.04)}
+    label{display:block;font-size:12px;font-weight:700;color:#5b6b7f;letter-spacing:.5px;margin-bottom:6px}
+    select,textarea,input[type=number]{width:100%;padding:9px 10px;border:1px solid #cbdceb;border-radius:9px;font-size:14px;color:#0f2341;background:#fff;outline:none}
+    textarea{resize:vertical;font-family:ui-monospace,Consolas,monospace;line-height:1.5}
+    select:focus,textarea:focus,input:focus{border-color:#1b5eb5}
+    .field{margin-bottom:12px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .faces{display:flex;flex-wrap:wrap;gap:8px}
+    .faces label{display:flex;align-items:center;gap:5px;margin:0;padding:7px 12px;border:1px solid #cbdceb;border-radius:20px;font-size:13px;font-weight:700;color:#0f2341;cursor:pointer;background:#f7fbff}
+    .faces label:has(input:checked){background:#1b5eb5;border-color:#1b5eb5;color:#fff}
+    .faces.filter label:has(input:checked){background:#0f2341;border-color:#0f2341}
+    .faces input{accent-color:#fff}
+    button{width:100%;padding:12px;border:none;border-radius:10px;background:#1b5eb5;color:#fff;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:1px}
+    button:disabled{background:#9db6d6;cursor:default}
+    button.secondary{background:#0f2341}
+    summary{cursor:pointer;font-size:13px;font-weight:800;color:#0f2341;letter-spacing:.5px}
+    .checks{list-style:none;margin-top:6px}
+    .checks li{font-size:12px;line-height:1.8;color:#5b6b7f}
+    .checks li b{font-weight:800}
+    .checks li.ok b{color:#1c7a3a}
+    .checks li.bad b{color:#b42318}
+    .checks .dim{color:#8a99ab}
+    .mini{font-size:12px;color:#8a99ab;margin-top:6px}
+    .mini a{color:#1b5eb5;text-decoration:none;font-weight:700}
+    .mini a:hover{text-decoration:underline}
+    .status{font-size:13px;color:#5b6b7f;margin-top:10px;line-height:1.75;min-height:20px}
+    .status b{color:#0f2341}
+    .status .dim{color:#8a99ab}
+    .status .warn{color:#b45309}
+    .rule{border-top:1px dashed #e3ecf5;margin:14px 0}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eef3f8;vertical-align:top}
+    th{font-size:11px;letter-spacing:.5px;color:#8a99ab;font-weight:700}
+    td.moves{font-family:ui-monospace,Consolas,monospace;color:#0f2341;word-break:break-word}
+    td.len{width:42px;font-weight:800;color:#1b5eb5}
+    td.from{width:66px;font-size:11px;color:#8a99ab;font-weight:700}
+    td.why{width:96px;font-size:11px;color:#b42318}
+    .tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap}
+    .tag-source{background:#eef3f8;color:#5b6b7f}
+    .tag-new{background:#e3f6e8;color:#1c7a3a}
+    .tag-bad{background:#fde8e8;color:#b42318}
+    .empty{font-size:13px;color:#8a99ab;text-align:center;padding:18px 0}
+</style>
+</head>
+<body>
+<main class="wrap">
+    <h1>公式候选生成</h1>
+    <p class="hint">生成器只负责“在某个动作族、某个长度内能算出什么”，收不收由下面的筛选决定。<br>
+    超出算力的动作族会被跳过或降长度，不会悄悄截断。<br>
+    起点 / 目标选类别时，每次点「生成候选」都会重新抽一个成员；没结果就再点一次。</p>
+
+    <section class="card">
+        <div class="field">
+            <label for="preset">案例</label>
+            <select id="preset"></select>
+        </div>
+
+        <div class="field">
+            <label for="startClass">起点类别（每次随机抽一个案例）</label>
+            <select id="startClass">
+                <option value="">不指定（用下面的初始状态）</option>
+                <option value="OLL">OLL：顶层未定向</option>
+                <option value="PLL">PLL：顶层已定向</option>
+                <option value="COLL">COLL：角已解决 + 棱已定向</option>
+                <option value="ELL">ELL：角已解决</option>
+            </select>
+        </div>
+
+        <div class="field" id="fromField">
+            <label for="fromState">初始状态（从复原态执行这串动作后）</label>
+            <textarea id="fromState" rows="2" spellcheck="false" placeholder="留空 = 复原态"></textarea>
+        </div>
+
+        <div class="field">
+            <label for="goalClass">目标类别（每次随机抽一个成员）</label>
+            <select id="goalClass">
+                <option value="">不指定（用下面的结束状态）</option>
+                <option value="PLL">PLL：顶层已定向</option>
+                <option value="OLL">OLL：顶层未定向</option>
+                <option value="COLL">COLL：角已解决 + 棱已定向</option>
+                <option value="ELL">ELL：角已解决</option>
+            </select>
+        </div>
+
+        <div class="field" id="toField">
+            <label for="toState">结束状态（同上，留空 = 复原态）</label>
+            <textarea id="toState" rows="2" spellcheck="false" placeholder="留空 = 复原态"></textarea>
+            <p class="mini" id="stateLinks"><a href="#" id="swapStates">交换起止</a> · <a href="#" id="invertFrom">取初始状态的解法</a> · <a href="#" id="invertTo">取结束状态的解法</a></p>
+        </div>
+
+        <div class="field">
+            <label>搜索动作族</label>
+            <div class="faces" id="faces"></div>
+        </div>
+
+        <div class="field">
+            <label for="mode">范围模式</label>
+            <select id="mode">
+                <option value="single">只用上面勾选的族</option>
+                <option value="union">合并常用族（RUF / LUF / RUD）</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="solveMode">产出类型</label>
+            <select id="solveMode">
+                <option value="candidates">候选（动作族 + 长度内）</option>
+                <option value="complete">完整解（任意起止，二阶段求解）</option>
+                <option value="dr">DR（降到 Domino 子群）</option>
+            </select>
+            <p class="mini">完整解不受动作族、长度和下面的筛选限制；DR 模式只使用起点，目标固定为 DR 子群。</p>
+        </div>
+
+        <div class="field grid">
+            <div>
+                <label for="length">目标长度（步）</label>
+                <input id="length" type="number" min="2" max="20" value="14">
+            </div>
+            <div>
+                <label for="limit">显示条数</label>
+                <input id="limit" type="number" min="1" max="200" value="20">
+            </div>
+        </div>
+
+        <button id="run">生成候选</button>
+        <p class="status" id="status"></p>
+    </section>
+
+    <section class="card" id="resultCard" hidden>
+        <div class="field">
+            <label>筛选：允许出现的面</label>
+            <div class="faces filter" id="filterFaces"></div>
+        </div>
+        <div class="field grid">
+            <div>
+                <label for="minLength">最短</label>
+                <input id="minLength" type="number" min="0" max="30" value="0">
+            </div>
+            <div>
+                <label for="maxLength">最长</label>
+                <input id="maxLength" type="number" min="0" max="30" value="20">
+            </div>
+        </div>
+        <p class="status" id="filterStatus"></p>
+        <div class="rule"></div>
+        <table>
+            <thead>
+                <tr><th>步数</th><th>候选</th><th>状态</th><th>来源族</th></tr>
+            </thead>
+            <tbody id="result"></tbody>
+        </table>
+    </section>
+    <section class="card">
+        <details id="selftestCard">
+            <summary>自检（开发用）</summary>
+            <div class="field" style="margin-top:12px">
+                <button id="runSelftest" class="secondary">运行自检</button>
+            </div>
+            <p class="status" id="selftestStatus">未运行</p>
+            <ul class="checks" id="selftestList"></ul>
+        </details>
+    </section>
+</main>
+
+<script type="module">
+import { COMMON_FAMILIES, generateCandidates, resolveStartState, resolveStatePair, solveBetween, solveToDR } from "./src/solver/index.js";
+import { applyFilter } from "./src/solver/filter.js";
+import { runSelfTest } from "./src/solver/selftest.js";
+import { invertMoves, movesToString, stringToMoves } from "./src/scramble/wca/puzzles/333/cubie.js";
+
+// 现成案例：data/cuberoot.js 的 PLL 条目（formula 是解法，
+// 初始状态填它的逆，即“产生这个案例的打乱”）
+const PRESETS = [
+    { id: "PLL/T", formula: "R U R' U' R' F R2 U' R' U' R U R' F'", faces: ["R", "U", "F"], length: 14 },
+    { id: "PLL/Rb", formula: "R' U2 R U2 R' F R U R' U' R' F' R2 U'", faces: ["R", "U", "F"], length: 14 },
+    { id: "PLL/L", formula: "L' U' L F L' U' L U L F' L2 U L U", faces: ["L", "U", "F"], length: 14 },
+    { id: "PLL/Na", formula: "R F U' R' U R U F' R2 F' R U R U' R' F", faces: ["R", "U", "F"], length: 16 },
+];
+
+const ALL_FACES = ["R", "U", "F", "L", "D", "B"];
+
+const presetEl = document.getElementById("preset");
+const fromEl = document.getElementById("fromState");
+const toEl = document.getElementById("toState");
+const goalClassEl = document.getElementById("goalClass");
+const startClassEl = document.getElementById("startClass");
+const facesEl = document.getElementById("faces");
+const modeEl = document.getElementById("mode");
+const solveModeEl = document.getElementById("solveMode");
+const lengthEl = document.getElementById("length");
+const limitEl = document.getElementById("limit");
+const runEl = document.getElementById("run");
+const statusEl = document.getElementById("status");
+const resultCard = document.getElementById("resultCard");
+const resultBody = document.getElementById("result");
+const filterFacesEl = document.getElementById("filterFaces");
+const minLengthEl = document.getElementById("minLength");
+const maxLengthEl = document.getElementById("maxLength");
+const filterStatusEl = document.getElementById("filterStatus");
+
+let lastResult = null;
+
+presetEl.innerHTML = PRESETS.map((item, index) => `<option value="${index}">${item.id}</option>`).join("")
+    + `<option value="-1">自定义公式</option>`;
+
+facesEl.innerHTML = ALL_FACES.map((face) => `
+    <label><input type="checkbox" value="${face}"> ${face}</label>
+`).join("");
+
+filterFacesEl.innerHTML = ALL_FACES.map((face) => `
+    <label><input type="checkbox" value="${face}" checked> ${face}</label>
+`).join("");
+
+function applyPreset(index) {
+    const preset = PRESETS[index];
+    if (!preset) return;
+    // 初始状态 = 解法公式的逆（从复原态执行它就到这个案例）
+    fromEl.value = movesToString(invertMoves(stringToMoves(preset.formula)));
+    toEl.value = "";
+    goalClassEl.value = "";
+    startClassEl.value = "";
+    syncGoalState();
+    syncStartState();
+    lengthEl.value = preset.length;
+    syncFaces(preset.faces);
+}
+
+function syncGoalState() {
+    const byClass = !!goalClassEl.value;
+    if (byClass) toEl.value = "";
+    toEl.disabled = byClass;
+    toEl.placeholder = byClass ? "由目标类别随机决定" : "留空 = 复原态";
+    document.getElementById("toField").hidden = byClass;
+    syncStateLinks();
+}
+
+function syncStartState() {
+    const byClass = !!startClassEl.value;
+    if (byClass) fromEl.value = "";
+    fromEl.disabled = byClass;
+    fromEl.placeholder = byClass ? "由起点类别随机决定" : "留空 = 复原态";
+    document.getElementById("fromField").hidden = byClass;
+    syncStateLinks();
+}
+
+function syncStateLinks() {
+    // 两个状态框都可见时才有意义
+    const visible = !document.getElementById("fromField").hidden && !document.getElementById("toField").hidden;
+    document.getElementById("stateLinks").hidden = !visible;
+}
+
+goalClassEl.addEventListener("change", syncGoalState);
+startClassEl.addEventListener("change", syncStartState);
+
+document.getElementById("swapStates").addEventListener("click", (event) => {
+    event.preventDefault();
+    const temp = fromEl.value;
+    fromEl.value = toEl.value;
+    toEl.value = temp;
+});
+
+document.getElementById("invertFrom").addEventListener("click", (event) => {
+    event.preventDefault();
+    const text = fromEl.value.trim();
+    if (!text) return;
+    fromEl.value = movesToString(invertMoves(stringToMoves(text)));
+});
+
+document.getElementById("invertTo").addEventListener("click", (event) => {
+    event.preventDefault();
+    const text = toEl.value.trim();
+    if (!text) return;
+    toEl.value = movesToString(invertMoves(stringToMoves(text)));
+});
+
+function syncFaces(faces) {
+    for (const input of facesEl.querySelectorAll("input")) {
+        input.checked = faces.includes(input.value);
+    }
+}
+
+function selected(container) {
+    return [...container.querySelectorAll("input:checked")].map((input) => input.value);
+}
+
+presetEl.addEventListener("change", () => applyPreset(Number(presetEl.value)));
+
+function currentFilter() {
+    return {
+        allowedFaces: selected(filterFacesEl),
+        minLength: Number(minLengthEl.value) || 0,
+        maxLength: Number(maxLengthEl.value) || 30,
+        requireVerified: true,
+    };
+}
+
+function renderFiltered() {
+    if (!lastResult) return;
+    const filter = currentFilter();
+    const { kept, rejected } = applyFilter(lastResult.candidates, filter);
+    const displayLimit = Math.max(1, Number(limitEl.value) || 20);
+    const display = kept.slice(0, displayLimit);
+
+    filterStatusEl.innerHTML = `候选 ${lastResult.candidates.length} 条 → 保留 <b>${kept.length}</b> 条，排除 ${rejected.length} 条`
+        + (kept.length > display.length ? `，显示前 ${display.length} 条` : "");
+
+    resultBody.innerHTML = display.map((row) => {
+        const tag = row.sameAsSource
+            ? `<span class="tag tag-source">等于起点</span>`
+            : row.inverseOfSource
+                ? `<span class="tag tag-source">起点取逆</span>`
+                : `<span class="tag tag-new">新解</span>`;
+        return `<tr><td class="len">${row.length}</td><td class="moves">${row.moves}</td><td>${tag}</td><td class="from">${row.foundIn.join(" ")}</td></tr>`;
+    }).join("") || `<tr><td colspan="4" class="empty">${lastResult.candidates.length
+        ? "筛选把候选全排除了，放宽条件试试"
+        : "这个长度下没算出候选：试试加大长度，或只固定起点/终点一端"}</td></tr>`;
+}
+
+for (const el of [filterFacesEl, minLengthEl, maxLengthEl]) {
+    el.addEventListener("change", renderFiltered);
+    el.addEventListener("input", renderFiltered);
+}
+
+function nextPaint() {
+    return new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+}
+
+async function runComplete() {
+    runEl.disabled = true;
+    resultCard.hidden = true;
+    statusEl.textContent = "准备二阶段表（首次约 1–2 秒）…";
+
+    let pair;
+    try {
+        pair = resolveStatePair({
+            from: startClassEl.value ? "" : fromEl.value,
+            fromClass: startClassEl.value || undefined,
+            to: goalClassEl.value ? "" : toEl.value,
+            toClass: goalClassEl.value || undefined,
+        });
+    } catch (error) {
+        statusEl.textContent = `失败：${error.message}`;
+        runEl.disabled = false;
+        return;
+    }
+
+    statusEl.innerHTML = `起点 <b>${pair.fromSource}</b> → 结束 <b>${pair.toSource}</b><br>二阶段求解中…`;
+    await nextPaint();
+
+    let result;
+    try {
+        result = await solveBetween(pair.fromCube, pair.toCube, {
+            timeLimitMs: 5000,
+            onProgress: ({ table, percent }) => {
+                statusEl.textContent = `建表：${table} ${percent}%…`;
+            },
+        });
+    } catch (error) {
+        statusEl.textContent = `失败：${error.message}`;
+        runEl.disabled = false;
+        return;
+    }
+
+    const head = `起点 <b>${pair.fromSource}</b> → 结束 <b>${pair.toSource}</b>`;
+    if (!result.verified) {
+        statusEl.innerHTML = `${head}<br><span class="warn">失败：${result.reason || "未通过复核"}</span>`;
+    } else {
+        statusEl.innerHTML = `${head}<br>`
+            + `完整解 ${result.total} 步：<b>${result.text || "（起点已是目标状态）"}</b><br>`
+            + `已用块模型复核，耗时 ${Math.round(result.elapsedMs)}ms`
+            + (result.nodes ? `，搜索节点 ${result.nodes.toLocaleString()}` : "");
+    }
+    runEl.disabled = false;
+}
+
+async function runDR() {
+    runEl.disabled = true;
+    resultCard.hidden = true;
+    statusEl.textContent = "准备二阶段表（首次约 1–2 秒）…";
+
+    let start;
+    try {
+        start = resolveStartState({
+            from: startClassEl.value ? "" : fromEl.value,
+            fromClass: startClassEl.value || undefined,
+        });
+    } catch (error) {
+        statusEl.textContent = `失败：${error.message}`;
+        runEl.disabled = false;
+        return;
+    }
+
+    statusEl.innerHTML = `起点 <b>${start.source}</b> → DR<br>DR 搜索中…`;
+    await nextPaint();
+
+    let result;
+    try {
+        result = await solveToDR(start.cube, {
+            maxSolutions: 64,
+            timeLimitMs: 10000,
+            nodeLimit: 20000000,
+            onProgress: ({ table, percent }) => {
+                statusEl.textContent = `建表：${table} ${percent}%…`;
+            },
+        });
+    } catch (error) {
+        statusEl.textContent = `失败：${error.message}`;
+        runEl.disabled = false;
+        return;
+    }
+
+    const head = `起点 <b>${start.source}</b> → DR（Domino）`;
+    if (!result.verified) {
+        statusEl.innerHTML = `${head}<br><span class="warn">失败：${result.reason || "未通过复核"}</span>`;
+    } else if (result.alreadyDR) {
+        statusEl.innerHTML = `${head}<br>起点已是 DR 状态（0 步），twist / flip / slice = 0。`;
+    } else {
+        const others = result.solutions.slice(1, 9);
+        const more = result.solutionCount > 9 ? "<br>…" : "";
+        statusEl.innerHTML = `${head}<br>`
+            + `DR 解 ${result.total} 步：<b>${result.text}</b><br>`
+            + `已复核：twist / flip / slice = 0，耗时 ${Math.round(result.elapsedMs)}ms`
+            + (result.nodes ? `，搜索节点 ${result.nodes.toLocaleString()}` : "")
+            + (result.solutionCount > 1
+                ? `<br>同长度候选 ${result.solutionCount} 条${result.truncated ? "（搜索预算用完，可能还有更多）" : ""}：`
+                    + `<br><span class="dim">${others.map((row) => row.text).join("<br>")}</span>${more}`
+                : "");
+    }
+    runEl.disabled = false;
+}
+
+solveModeEl.addEventListener("change", () => {
+    const mode = solveModeEl.value;
+    runEl.textContent = mode === "complete" ? "求完整解" : mode === "dr" ? "求 DR" : "生成候选";
+    resultCard.hidden = true;
+    statusEl.textContent = "";
+});
+
+runEl.addEventListener("click", async () => {
+    if (solveModeEl.value === "complete") {
+        await runComplete();
+        return;
+    }
+    if (solveModeEl.value === "dr") {
+        await runDR();
+        return;
+    }
+
+    const faces = selected(facesEl);
+    if (!faces.length) {
+        statusEl.textContent = "至少选一个面";
+        return;
+    }
+
+    runEl.disabled = true;
+    resultCard.hidden = true;
+    statusEl.textContent = `计算中：目标长度 ${lengthEl.value} 步…`;
+
+    // 让状态文字先绘制出来，再进入同步搜索
+    await nextPaint();
+
+    const families = modeEl.value === "union" ? [faces, ...COMMON_FAMILIES] : [faces];
+
+    let result;
+    try {
+        result = generateCandidates({
+            from: startClassEl.value ? "" : fromEl.value,
+            fromClass: startClassEl.value || undefined,
+            to: goalClassEl.value ? "" : toEl.value,
+            toClass: goalClassEl.value || undefined,
+            families,
+            length: Number(lengthEl.value) || 14,
+            deadlineMs: 40000,
+        });
+    } catch (error) {
+        statusEl.textContent = `失败：${error.message}`;
+        runEl.disabled = false;
+        return;
+    }
+
+    lastResult = result;
+    const { case: info, search, stats } = result;
+
+    const familyLines = search.families.map((run) => {
+        if (run.skipped) {
+            return `　<span class="warn">${run.faces.join("")}：跳过（${run.reason}）</span>`;
+        }
+        const flag = run.reduced ? ` <span class="warn">降长度（${run.reason}）</span>`
+            : run.truncated ? ` <span class="dim">截断 ${run.forwardReached}/${run.backwardReached}</span>`
+            : "";
+        return `　${run.faces.join("")}：${run.length} 步，节点 ${run.forwardNodes}/${run.backwardNodes}，候选 ${run.meetings}，${run.elapsedMs}ms${flag}`;
+    }).join("<br>");
+
+    const startText = info.sourceClass ? info.source : (info.source || "复原态");
+    const startMeta = info.sourceClass ? "" : `（${info.length} 步）`;
+    statusEl.innerHTML =
+        `起点 <b>${startText}</b>${startMeta} → 结束 <b>${info.targetClass ? info.targetLabel : (info.target || "复原态")}</b><br>`
+        + `目标长度 ${search.requestedLength}${search.length !== search.requestedLength ? ` → 实际 ${search.length}` : ""}，节点上限 ${search.nodeCeiling.toLocaleString()}/侧<br>`
+        + familyLines + `<br>`
+        + `合计候选 ${stats.total} 条（通过 ${stats.verified}），耗时 ${stats.elapsedMs}ms`
+        + (stats.total === 0
+            ? `<br><span class="warn">族内没有候选。起止相距较远时，把产出类型切到「完整解」。</span>`
+            : "");
+
+    resultCard.hidden = false;
+    renderFiltered();
+    runEl.disabled = false;
+});
+
+const selftestStatusEl = document.getElementById("selftestStatus");
+const selftestListEl = document.getElementById("selftestList");
+const runSelftestEl = document.getElementById("runSelftest");
+
+runSelftestEl.addEventListener("click", async () => {
+    runSelftestEl.disabled = true;
+    selftestListEl.innerHTML = "";
+    selftestStatusEl.textContent = "运行中…";
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+
+    let results;
+    try {
+        results = await runSelfTest({
+            onStep: async (label) => {
+                selftestStatusEl.textContent = `运行中：${label}`;
+                await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+            },
+        });
+    } catch (error) {
+        selftestStatusEl.textContent = `自检异常：${error.message}`;
+        runSelftestEl.disabled = false;
+        return;
+    }
+
+    const pass = results.filter((row) => row.ok).length;
+    const fail = results.length - pass;
+    selftestStatusEl.innerHTML = `共 ${results.length} 项：<b style="color:#1c7a3a">通过 ${pass}</b>`
+        + (fail ? `，<b style="color:#b42318">失败 ${fail}</b>` : "");
+    selftestListEl.innerHTML = results.map((row) => {
+        const detail = row.detail ? ` <span class="dim">${row.detail}</span>` : "";
+        return `<li class="${row.ok ? "ok" : "bad"}"><b>${row.ok ? "PASS" : "FAIL"}</b> ${row.name}${detail}</li>`;
+    }).join("");
+    runSelftestEl.disabled = false;
+});
+
+// 默认进类别模式：起点随机 OLL 案例、终点复原态，公式框不显示
+presetEl.value = "-1";
+startClassEl.value = "OLL";
+goalClassEl.value = "";
+modeEl.value = "union";
+syncFaces(["R", "U", "F"]);
+syncStartState();
+syncGoalState();
+
+</script>
+</body>
+</html>

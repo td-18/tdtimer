@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>SQ1 缩略图渲染检查</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #eef3f9; margin: 20px; color: #0f2341; }
+  .row { display: flex; flex-wrap: wrap; gap: 18px; }
+  figure { margin: 0; background: #fff; border: 1px solid #cbdceb; border-radius: 10px; padding: 10px; width: 190px; }
+  figcaption { font-size: 12px; margin-top: 6px; word-break: break-all; }
+  .cell { display: flex; justify-content: center; align-items: center; height: 180px; }
+  h2 { font-size: 15px; margin: 22px 0 8px; }
+  .dark { background: #11161d; color: #eee; }
+</style>
+</head>
+<body>
+<h1 style="font-size:18px">SQ1 自绘 3D 渲染检查</h1>
+<div id="out"></div>
+<script type="module">
+import { sq1ThumbSVG, sq1PiecesFromAlg } from "../src/sq1Thumb.js";
+import { normalizeFormulaAlg } from "../src/algNotation.js";
+
+const CASES = [
+  ["solved", ""],
+  ["kite/kite", "(1,0)/(0,-1)/"],
+  ["scallop", "(1,0)/(-1,-1)/(0,3)/"],
+  ["star", "(0,-1)/(0,3)/(0,-3)/(3,0)/"],
+  ["CO 常见", "/(3,0)/(-3,0)/"],
+  ["长公式", "(1,0)/(-3,0)/(3,3)/(0,-3)/(0,2)/(-2,-1)/"],
+  ["赤道转90(单/)", "/"],
+  ["赤道转90+偏移", "(3,0)/"],
+];
+const MODES = ["full", "shape", "orientation"];
+
+const out = document.getElementById("out");
+for (const mode of MODES) {
+  const h = document.createElement("h2");
+  h.textContent = "mode = " + mode;
+  out.appendChild(h);
+  const row = document.createElement("div");
+  row.className = "row";
+  out.appendChild(row);
+  for (const [name, alg] of CASES) {
+    const fig = document.createElement("figure");
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    fig.appendChild(cell);
+    const cap = document.createElement("figcaption");
+    cap.textContent = name + "  " + (alg || "(solved)");
+    fig.appendChild(cap);
+    row.appendChild(fig);
+    try {
+      const pieces = await sq1PiecesFromAlg(normalizeFormulaAlg("sq1", alg));
+      cell.innerHTML = sq1ThumbSVG(pieces, 150, { mode });
+    } catch (err) {
+      cell.textContent = "ERR " + err.message;
+    }
+  }
+}
+</script>
+</body>
+</html>

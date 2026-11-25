@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WCA M1/M2/M3/M4 · 2x2 / Pyra / Skewb / Clock / SQ1 / 5-7 / Megaminx check</title>
+<style>
+    body { font-family: ui-monospace, Consolas, monospace; padding: 20px; background: #0f172a; color: #d1fae5; }
+    h1 { font-size: 18px; color: #f8fafc; }
+    pre { white-space: pre-wrap; line-height: 1.6; }
+    .fail { color: #fca5a5; }
+    .pass { color: #86efac; }
+    .info { color: #93c5fd; }
+</style>
+</head>
+<body>
+<h1>WCA M1/M2/M3/M4 · 2x2 / Pyraminx / Skewb / Clock / Square-1 / 5x5-7x7 / Megaminx</h1>
+<pre id="out">running...</pre>
+
+<script type="module">
+import {
+    ScrambleService,
+    getScrambleService,
+    validateScramble,
+} from "../src/scramble/wca/index.js";
+
+const out = document.getElementById("out");
+const lines = [];
+window.__M1_MORE_RESULTS__ = lines;
+
+function eq(actual, expected, label) {
+    if (actual !== expected) {
+        throw new Error(`${label || "eq"}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+    }
+}
+
+function truthy(value, label) {
+    if (!value) throw new Error(label || "expected truthy");
+}
+
+function info(text) {
+    lines.push(`INFO ${text}`);
+}
+
+async function check(name, fn) {
+    try {
+        await fn();
+        lines.push(`PASS ${name}`);
+    } catch (error) {
+        lines.push(`FAIL ${name}: ${error && error.message ? error.message : error}`);
+    }
+}
+
+async function checkLocal(service, eventId, minMoves, label) {
+    const times = [];
+    const lengths = [];
+    for (let i = 0; i < 5; i++) {
+        const t0 = performance.now();
+        const result = await service.generate(eventId);
+        const ms = performance.now() - t0;
+        eq(result.source, "worker", `${label} source`);
+        const scr = result.scrambles[0];
+        const validation = validateScramble(eventId, scr);
+        truthy(validation.ok, `${label} notation: ${scr}`);
+        const length = scr.split(/\s+/).length;
+        truthy(length >= minMoves, `${label} min length ${length} < ${minMoves}`);
+        lengths.push(length);
+        times.push(ms);
+    }
+    info(`${label} lengths=[${lengths.join(",")}] avg=${(lengths.reduce((a, b) => a + b, 0) / lengths.length).toFixed(2)} max=${Math.max(...lengths)}`);
+    info(`${label} time avg=${(times.reduce((a, b) => a + b, 0) / times.length).toFixed(0)}ms max=${Math.max(...times).toFixed(0)}ms`);
+}
+
+await check("capabilities: M1/M2 ready + M4 scaffold", async () => {
+    const caps = await getScrambleService().getCapabilities();
+    const byId = Object.fromEntries(caps.scramblers.map((item) => [item.id, item]));
+
+    for (const id of ["222", "444", "pyra", "skewb", "clock", "sq1", "555", "666", "777", "minx"]) {
+        eq(byId[id].local, "ready", `${id} local`);
+        eq(byId[id].implemented, true, `${id} implemented`);
+        eq(byId[id].scaffold, false, `${id} scaffold`);
+    }
+
+    info(`scramblers=${caps.scramblers.length} rulesVersion=${caps.rulesVersion}`);
+});
+
+await check("worker: 444 local random-state provider", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        const progress = [];
+        const t0 = performance.now();
+        const first = await service.generate("444", { onProgress: (data) => progress.push(data) });
+        const firstMs = performance.now() - t0;
+        eq(first.source, "worker", "444 source");
+        truthy(validateScramble("444", first.scrambles[0]).ok, "444 notation");
+        truthy(
+            progress.some((item) => item.phase === "init" && item.percent === 100),
+            "444 init progress"
+        );
+        info(`444 first=${Math.round(firstMs)}ms tableBuildMs=${Math.round(first.meta.tableBuildMs || 0)}`);
+
+        const lengths = [];
+        for (let i = 0; i < 4; i++) {
+            const t = performance.now();
+            const result = await service.generate("444");
+            eq(result.source, "worker", `444 #${i} source`);
+            const text = result.scrambles[0];
+            truthy(validateScramble("444", text).ok, `444 #${i} notation`);
+            lengths.push(text.split(/\s+/).length);
+            info(`444 #${i} ${Math.round(performance.now() - t)}ms`);
+        }
+        info(`444 lengths=[${lengths.join(",")}]`);
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: 222 local provider", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        await checkLocal(service, "222", 4, "222");
+        const init = await service.init("222");
+        eq(init.status, "ready", "222 init status");
+        info(`222 tableBuildMs=${Math.round(init.meta.tableBuildMs || 0)}`);
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: pyra local provider", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        await checkLocal(service, "pyra", 6, "pyra");
+        const init = await service.init("pyra");
+        eq(init.status, "ready", "pyra init status");
+        info(`pyra tableBuildMs=${Math.round(init.meta.tableBuildMs || 0)} reachable=${init.meta.reachableCount}`);
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: skewb local provider", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        await checkLocal(service, "skewb", 7, "skewb");
+        const init = await service.init("skewb");
+        eq(init.status, "ready", "skewb init status");
+        info(`skewb tableBuildMs=${Math.round(init.meta.tableBuildMs || 0)} reachable=${init.meta.reachableCount}`);
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: clock local provider", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        await checkLocal(service, "clock", 2, "clock");
+        const init = await service.init("clock");
+        eq(init.status, "ready", "clock init status");
+        eq(init.meta.randomState, true, "clock random state");
+        info(`clock stateCount=${init.meta.stateCount}`);
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: sq1 local provider", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        await checkLocal(service, "sq1", 11, "sq1");
+        const init = await service.init("sq1");
+        eq(init.status, "ready", "sq1 init status");
+        info(`sq1 tableBuildMs=${Math.round(init.meta.tableBuildMs || 0)} minSlashes=${init.meta.minSlashes}`);
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: 555 / 666 / 777 local random-move", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        await checkLocal(service, "555", 60, "555");
+        await checkLocal(service, "666", 80, "666");
+        await checkLocal(service, "777", 100, "777");
+        for (const id of ["555", "666", "777"]) {
+            const init = await service.init(id);
+            eq(init.status, "ready", `${id} init status`);
+            info(`${id} moveCount=${init.meta.moveCount} maxLayers=${init.meta.maxLayers}`);
+        }
+    } finally {
+        service.dispose();
+    }
+});
+
+await check("worker: minx local random-move", async () => {
+    const service = new ScrambleService({ timeoutMs: 30000 });
+    try {
+        await checkLocal(service, "minx", 77, "minx");
+        const init = await service.init("minx");
+        eq(init.status, "ready", "minx init status");
+        info(`minx moveCount=${init.meta.moveCount} lines=${init.meta.lines}`);
+    } finally {
+        service.dispose();
+    }
+});
+
+const passed = lines.filter((line) => line.startsWith("PASS")).length;
+const failed = lines.filter((line) => line.startsWith("FAIL")).length;
+
+out.textContent = `${lines.join("\n")}\n\n${passed} passed, ${failed} failed`;
+out.className = failed ? "fail" : "pass";
+document.title = failed ? `FAIL (${failed})` : `PASS (${passed})`;
+</script>
+</body>
+</html>

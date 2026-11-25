@@ -1,0 +1,16 @@
+{
+  "name": "tdtimer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TDtimer 开发期静态检查；不参与前端构建",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0"
+  }
+}

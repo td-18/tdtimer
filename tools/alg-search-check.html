@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>求解器自检</title>
+<style>
+    body { font-family: ui-monospace, Consolas, monospace; padding: 20px; background: #0f172a; color: #d1fae5; }
+    h1 { font-size: 18px; color: #f8fafc; }
+    p { color: #93c5fd; font-size: 12px; margin: 8px 0 14px; }
+    pre { white-space: pre-wrap; line-height: 1.7; }
+</style>
+</head>
+<body>
+<h1>求解器自检</h1>
+<p>与 solver.html 里的「自检」用的是同一个模块：src/solver/selftest.js</p>
+<pre id="out">running...</pre>
+
+<script type="module">
+import { runSelfTest } from "../src/solver/selftest.js";
+
+const out = document.getElementById("out");
+const lines = [];
+window.__ALG_SEARCH_RESULTS__ = lines;
+window.__ALG_SEARCH_SUMMARY__ = null;
+
+const paint = (text) => new Promise((resolve) => {
+    out.textContent = lines.concat(text).join("\n");
+    requestAnimationFrame(() => setTimeout(resolve, 0));
+});
+
+const results = await runSelfTest({
+    onStep: async (label) => {
+        await paint(`running ${label} ...`);
+    },
+});
+
+let pass = 0;
+for (const row of results) {
+    lines.push(`${row.ok ? "PASS" : "FAIL"} ${row.name}${row.detail ? `  (${row.detail})` : ""}`);
+    if (row.ok) pass++;
+}
+lines.push("");
+lines.push(`合计: PASS ${pass} / FAIL ${results.length - pass}`);
+out.textContent = lines.join("\n");
+
+window.__ALG_SEARCH_SUMMARY__ = { pass, fail: results.length - pass };
+</script>
+</body>
+</html>

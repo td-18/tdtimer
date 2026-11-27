@@ -214,7 +214,9 @@ function parseMove(token, n) {
 
     const lowerCaseFace = /[udlrfb]/.test(letter);
     const wide = wideFlag || lowerCaseFace;
-    const start = prefix ? Number(prefix) : 1;
+    // 宽层记号中的数字表示层数，始终从外层开始；无 w 的 2R / 3R
+    // 才表示从外层数起的第 N 个单层。
+    const start = wide ? 1 : (prefix ? Number(prefix) : 1);
     const count = wide ? (prefix ? Number(prefix) : 2) : 1;
     if (start < 1 || start + count - 1 > n) return null;
 

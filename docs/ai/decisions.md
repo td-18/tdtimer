@@ -220,3 +220,16 @@
 - 相关文件：`index.html`、`timer.html`、`formula.html`、`training.html`、
   `src/cubeThumb.js`、`src/flatCubeView.js`、`src/scramble.js`、`src/training.js`、
   `src/formula.js`、`src/timer-entry.js`、`src/training-entry.js`、`styles.css`。
+
+## 2026-11-28 公式库恢复 3D 并修正高阶宽层平面状态
+
+- 状态：已采纳，替代上一条中“公式页也取消 3D”的部分。
+- 背景：计时页的 3D 会因 CDN 不可用而空白，但公式库原本的异步 3D 仍有价值；
+  同时 6×6 / 7×7 的 `3Rw` 等三层宽转被错误当成从第 3 层开始。
+- 决定：计时和训练继续使用完整六面平面图；公式库恢复原有 3D 状态和平面降级。
+  宽层记号中的数字统一表示从外层开始包含的层数，`3Rw` 必须作用于外三层；
+  `3R`（无 w）仍表示第 3 个单层。
+- 影响：6×6 / 7×7 的平面状态与宽层打乱一致；公式库重新异步加载
+  `twisty-player`，失败时仍显示平面图，不影响页面入口。
+- 相关文件：`src/cubeThumb.js`、`src/formula.js`、`src/twistyView.js`、
+  `tests/cube-net.test.mjs`、`styles.css`、`README.md`、`docs/ai/architecture.md`。

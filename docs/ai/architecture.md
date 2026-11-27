@@ -4,8 +4,8 @@
 
 - 纯静态站点：四个入口 HTML + `styles.css` + 原生 ES Module，无打包、无构建。
 - 部署：Cloudflare Pages，推送即上线。
-- 外部能力：cubing.js 通过 CDN 提供部分打乱兜底和 SQ1 公式状态计算；
-  打乱加载有 5 秒超时。所有可见魔方状态使用本地平面展开图，不加载 3D。
+- 外部能力：cubing.js 通过 CDN 提供部分打乱兜底、公式 3D 和 SQ1 状态计算；
+  打乱和 3D 加载均有 5 秒超时，公式 3D 失败时降级为平面图。
 - 目标环境：手机 Chrome / Safari，触控优先；桌面可用。
 - 测试：Node 内置 `node --test`，不安装额外测试框架。
 - 静态检查：ESLint（仅开发期，`npm run lint`），只做正确性检查，不参与
@@ -34,6 +34,7 @@ src/
   main.js             旧入口兼容，转发到 timer-entry
   loadGuard.js        Promise 超时保护
   flatCubeView.js     本地六面平面展开图渲染
+  twistyView.js       cubing.js 3D 异步加载与平面图降级
   algInverse.js       不依赖 CDN 的公式求逆
   lsllLoader.js       一步 LSLL 大类文件按需加载
   state.js            全局状态、17 个项目列表、常量、兜底公式
@@ -43,7 +44,7 @@ src/
   timer.js            计时状态机、观察、触控 / 键盘输入
   ui.js               页签与项目下拉
   scramble.js         计时页打乱调度、cubing.js 超时与本地降级
-  formula.js          公式库浏览与状态卡平面展示
+  formula.js          公式库浏览、状态卡与 3D 演示
   training.js         训练分组、套选择与训练题生成
   formulaSets.js      项目分组 / 套的元数据
   formulaFamilies.js  家族分类规则（ZBLL、COLL 等）
@@ -111,10 +112,10 @@ docs/                 项目文档与 AI 文档库
 
 - 数据来源：`window.FormulaDB`（`data/cuberoot.js`）、`data/lsll.js`、
   `data/lsll-one-step/*.js`。
-- 浏览结构：状态卡 → 公式 + 完整平面状态；三级 / 二阶部分分类多一层家族。
-- 状态与缩略图：由公式反推状态，立方体统一显示完整六面展开图；
-  SQ1 使用自绘平面图；缩略图进入视口前不创建。
-- 立方体状态使用本地六面平面展开图；打乱后的 U/L/F/R/B/D 六个面都会更新。
+- 浏览结构：状态卡 → 公式 + 3D 演示；三级 / 二阶部分分类多一层家族。
+- 状态与缩略图：由公式反推状态，平面图 / 3D 按分类规则选择；
+  SQ1 使用自绘缩略图；缩略图进入视口前不创建 3D 场景。
+- cubing.js 的 `twisty-player` 异步加载；失败时显示平面状态图。
 - 分页只用于 LSLL；其他分类一次展示全部状态。
 - 详细绘制规则见 [`../formula-thumbnails.md`](../formula-thumbnails.md)。
 

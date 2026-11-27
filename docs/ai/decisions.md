@@ -206,3 +206,17 @@
   `src/timer-entry.js`、`src/formula-entry.js`、`src/training-entry.js`、
   `src/training.js`、`src/twistyView.js`、`src/loadGuard.js`、`src/timer.js`、
   `src/formula.js`、`src/scramble.js`、`src/lsllLoader.js`。
+
+## 2026-11-28 取消模块互跳与 3D 状态图
+
+- 状态：已采纳
+- 背景：三个模块入口已经由首页负责，功能页内部再放互相跳转按钮会重复导航；
+  cubing.js 3D 在部分网络环境下无法显示，用户看到的打乱状态区域会为空。
+- 决定：首页只保留计时、公式、训练三个入口板块；计时、公式、训练页不提供互相跳转
+  按钮。所有可见魔方状态改为本地平面图，不再创建或加载 `twisty-player`。
+  2x2–7x7 使用完整六面展开图，按实际打乱或公式状态更新六个面。
+- 影响：计时和训练当前打乱会完整显示 U/L/F/R/B/D；公式卡和详情统一使用平面状态。
+  cubing.js 只保留部分非本地项目的打乱兜底和 SQ1 状态计算，不再影响 3D 展示可用性。
+- 相关文件：`index.html`、`timer.html`、`formula.html`、`training.html`、
+  `src/cubeThumb.js`、`src/flatCubeView.js`、`src/scramble.js`、`src/training.js`、
+  `src/formula.js`、`src/timer-entry.js`、`src/training-entry.js`、`styles.css`。

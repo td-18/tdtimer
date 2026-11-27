@@ -174,8 +174,7 @@ export function initTimer(options = {}) {
             target.closest("#formula") ||
             target.closest("#bluetoothModal") ||
             target.closest("#trainBar") ||
-            target.closest("#scrambleViewer") ||
-            target.closest("twisty-player");
+            target.closest("#scrambleViewer");
     }
 
     function isFormControl(target) {

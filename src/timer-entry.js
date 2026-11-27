@@ -10,7 +10,7 @@ import {
     resetScrambleCache,
 } from "./scramble.js";
 import { initHardwareUI } from "./hardware/ui.js";
-import { decorateTwistyElement, loadTwisty } from "./twistyView.js";
+import { renderFlatCube } from "./flatCubeView.js";
 
 window.onerror = function (msg) {
     console.log("防崩捕获:", msg);
@@ -26,12 +26,11 @@ const timer = initTimer({
 initHardwareUI(timer);
 
 const cube = document.getElementById("scrambleCube");
-decorateTwistyElement(cube, {
+renderFlatCube(cube, {
     puzzle: state.puzzle.puzzle || state.puzzle.key,
     alg: "",
-    label: "打乱状态",
+    label: "当前打乱状态的六面平面展开图",
 });
-loadTwisty();
 
 document.getElementById("observeCheckbox").onchange = (event) => {
     state.observe = event.target.checked;

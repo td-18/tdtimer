@@ -1,141 +1,30 @@
-// 公式库：模块/分类浏览、3D 演示、训练模式
+// 公式库：模块 / 分类浏览与本地平面状态展示
 import { normalizeCategories, groupCategories, HIDDEN_PUZZLES } from "./formulaSets.js";
 import { getFormulaFamilies } from "./formulaFamilies.js";
 import { getPuzzleMeta, getTwistyPuzzle, normalizeFormulaAlg } from "./algNotation.js";
-import { applyAlgToFacelets, applyAlgToFaceletsForPuzzle, cubeThumbSVG, isTopLayerOnly, topFacePatternSVG } from "./cubeThumb.js";
-import { sq1ThumbSVG, sq1OrientationSVG, sq1PiecesFromAlg } from "./sq1Thumb.js";
+import {
+    applyAlgToFacelets,
+    applyAlgToFaceletsForPuzzle,
+    cubeNetSVG,
+    isTopLayerOnly,
+} from "./cubeThumb.js";
+import { sq1OrientationSVG, sq1PiecesFromAlg } from "./sq1Thumb.js";
 import { puzzleIconHTML } from "./puzzleIcons.js";
 import { invertAlg } from "./algInverse.js";
-import { decorateTwistyElement, loadTwisty } from "./twistyView.js";
+import { flatCubeSVG } from "./flatCubeView.js";
 import { loadLsllOneStepFamily, lsllOneStepFamilies, lsllOneStepTotal } from "./lsllLoader.js";
 
 // LSLL 一步 / 两步的列表统一每页 50 条，翻页只替换列表内容。
 const FORMULA_PAGE_SIZE = 50;
 
-// 可以按「只有顶层未还原」自动切换到平面图的立方体项目。
-// 二阶默认也适用，只有 PBL / EG 系列保持 3D；5x5 全部保持 3D。
-const FLAT_CUBE_PUZZLES = ["2x2", "3x3", "4x4", "6x6", "7x7"];
-const KEEP_3D_CATS = { "2x2": ["PBL", "EG"] };
-function keepCategory3D(puzzleKey, catKey) {
-    const list = KEEP_3D_CATS[puzzleKey] || [];
-    const key = String(catKey || "");
-    return list.some((prefix) => key === prefix || key.indexOf(prefix) === 0);
-}
-
-// 固定缩略图视角的分类：
-// 桥式 CMLL 只看顶层角块，不需要看底层，统一画平面图；
-// LSE 涉及中层/底层棱块，平面图会漏信息，统一画 3D。
-const FORCE_FLAT_CATS = {
-    "3x3": ["CMLL", "2-Look CMLL", "OH CMLL", "WV", "VLS", "SV"],
-    "4x4": ["PLL Parity"],
-};
-const FORCE_3D_CATS = {
-    "3x3": ["LSE-EOLR", "ZBLS", "F2L", "非标", "伪槽", "FRUF", "CLS"],
-};
-
-// 这些分类只看当前步骤的定向，不显示 PLL（最后一层位置）状态。
-const STATE_STICKERING = {
-    "3x3": {
-        CLS: "CLS",
-    },
-    "2x2": {
-        OLL: "OLL",
-        PBL: "PBL",
-        CLL: "OCLL",
-        EG1: "OCLL",
-        EG2: "OCLL",
-        LEG1: "OCLL",
-        "TCLL+": "OCLL",
-        "TCLL-": "OCLL",
-        "TEG2+": "OCLL",
-        LS1: "OCLL",
-        LS2: "OCLL",
-        LS3: "OCLL",
-        LS4: "OCLL",
-        LS5: "OCLL",
-        LS6: "OCLL",
-        LS7: "OCLL",
-        LS8: "OCLL",
-        LS9: "OCLL",
-    },
-    "4x4": {
-        "OLL Parity": "OLL",
-    },
-    "5x5": {
-        L2C: "L2C",
-    },
-    "6x6": {
-        L2C: "L2C",
-    },
-    "megaminx": {
-        CO: "OCLL",
-        CP: "CPLL",
-        EO: "EOLL",
-        EP: "EPLL",
-        PLL: "PLL",
-    },
-};
-function stateStickering(puzzleKey, catKey) {
-    return (STATE_STICKERING[puzzleKey] || {})[catKey] || "";
-}
-
-// F2L / 非标 / 伪槽 / FRUF：已还原部分保持原样，只隐藏顶层的其他块。
-// 需要入槽的 FR 角块 CORNERS[4] / 棱块 EDGES[8] 即使在顶层也保持显示。
-const F2L_PAIR_MASK = {
-    orbits: {
-        CORNERS: {
-            pieces: Array.from({ length: 8 }, (_, i) => ({
-                facelets: Array(5).fill(i < 4 ? "ignored" : "regular"),
-            })),
-        },
-        EDGES: {
-            pieces: Array.from({ length: 12 }, (_, i) => ({
-                facelets: Array(5).fill(i < 4 ? "ignored" : "regular"),
-            })),
-        },
-        CENTERS: {
-            pieces: Array.from({ length: 6 }, () => ({
-                facelets: Array(5).fill("regular"),
-            })),
-        },
-    },
-};
-function isF2LPairOnly(puzzleKey, catKey) {
-    return puzzleKey === "3x3"
-        && (catKey === "F2L" || catKey === "非标" || catKey === "伪槽" || catKey === "FRUF");
-}
-
-// SQ1 状态卡片改用自绘 3D：CS 只看形状，CO/EO/OBL 只看顶面朝向，
-// 其余分类显示完整颜色。黑顶由外层 .sq1BlackTop 的 CSS 只覆盖顶面。
-const SQ1_THUMB_SIZE = 96;
-function sq1ThumbMode(catKey) {
-    if (catKey === "CS") return "shape";
-    if (catKey === "CO" || catKey === "EO" || catKey === "OBL") return "orientation";
-    return "full";
-}
-function categoryViewMode(puzzleKey, catKey) {
-    const key = String(catKey || "");
-    if ((FORCE_FLAT_CATS[puzzleKey] || []).indexOf(key) !== -1) return "flat";
-    if ((FORCE_3D_CATS[puzzleKey] || []).indexOf(key) !== -1) return "3d";
-    return "";
-}
-
 // 家族卡片的特殊缩略图：
 // - oll-state：只画对应的 OLL 状态（ZBLL / COLL / OLLCP / 1LLL）
-// - top-yellow：只画顶面黄色状态（二阶 CLL / EG）
-// - zbls-3d：3D 保留已还原部分原色，未还原区域只显示黄色/深灰（ZBLS）
 const FAMILY_THUMB_MODES = {
     "3x3": {
         ZBLL: "oll-state",
         COLL: "oll-state",
         OLLCP: "oll-state",
         "1LLL": "oll-state",
-        ZBLS: "zbls-3d",
-    },
-    "2x2": {
-        CLL: "top-yellow",
-        EG1: "top-yellow",
-        EG2: "top-yellow",
     },
 };
 function familyThumbMode(puzzleKey, catKey) {
@@ -167,22 +56,12 @@ function familyOllRow(puzzleKey, catKey, familyKey) {
     return number ? getOllRow(`OLL ${number}`) : null;
 }
 
-// OLL / OLL Parity 的状态卡片只看黄色贴纸（顶面 + 侧面标签），不需要其他颜色。
-const YELLOW_ONLY_CATS = {
-    "3x3": ["OLL"],
-    "2x2": ["OLL", "CLL", "EG1", "EG2"],
-    "4x4": ["OLL Parity"],
-};
-function yellowOnlyCategory(puzzleKey, catKey) {
-    return (YELLOW_ONLY_CATS[puzzleKey] || []).indexOf(String(catKey || "")) !== -1;
-}
-
-// 所有 3D 缩略图统一使用这个尺寸，避免 2x2 / 3x3 / 4x4 之间大小不一致。
-const THUMB_3D_SIZE = 64;
+// 平面缩略图统一使用这个尺寸，避免不同项目之间大小不一致。
+const THUMB_SIZE = 64;
 const CUBE_ORDER = { "2x2": 2, "3x3": 3, "4x4": 4, "5x5": 5, "6x6": 6, "7x7": 7 };
 
 // 状态卡片数量可能很大（取消分页后一次展示全部）。缩略图改为进入视口前再创建，
-// 避免一次创建成百上千个 twisty-player 或平面 SVG。
+// 避免一次创建成百上千个平面 SVG。
 let cardThumbObserver = null;
 function lazyMountThumb(el, mount) {
     if (typeof IntersectionObserver === "undefined") {
@@ -210,8 +89,8 @@ function lazyMountThumb(el, mount) {
 let zbllJumpHandler = null;
 
 // 平面图每格 10px；3D 立方体投影色块边长 9px。
-function lsllStateThumbSVG(facelets, flatSize = 50, cubeSize = 54) {
-    return cubeThumbSVG(facelets, isTopLayerOnly(facelets) ? flatSize : cubeSize);
+function lsllStateThumbSVG(facelets, cubeSize = 54) {
+    return cubeNetSVG(facelets, cubeSize);
 }
 
 function buildFormulaUI() {
@@ -520,7 +399,7 @@ function renderLsllOneStep(raw, containerDiv, puzzleKey, puzzleType) {
 
             const thumb = document.createElement("span");
             thumb.className = "lsllFamilyThumb";
-            thumb.innerHTML = cubeThumbSVG(family.facelets, 54);
+            thumb.innerHTML = cubeNetSVG(family.facelets, 54);
             const name = document.createElement("span");
             name.className = "lsllFamilyName";
             name.textContent = family.key;
@@ -632,7 +511,7 @@ function renderLsllTwoStep(raw, containerDiv, puzzleKey, puzzleType) {
 
             const thumb = document.createElement("span");
             thumb.className = "lsllFamilyThumb";
-            thumb.innerHTML = cubeThumbSVG(family.facelets, 54);
+            thumb.innerHTML = cubeNetSVG(family.facelets, 54);
             const name = document.createElement("span");
             name.className = "lsllFamilyName";
             name.textContent = family.key;
@@ -851,43 +730,14 @@ function renderPagedButtons(items, containerDiv, options) {
     draw(1, false);
 }
 
-// cubing.js 的 stickering 预设会把无关块统一设为 dim。这里把 dim 恢复成 regular，
-// 已还原部分保持原色；预设里 ignored / ignoreNonPrimary 的部分仍然不显示。
-function keepSolvedStickers(player) {
-    const scene = player.experimentalModel && player.experimentalModel.twistySceneModel;
-    if (!scene || !scene.stickeringMask) return;
-    scene.stickeringMask.get().then((mask) => {
-        const fixed = JSON.parse(JSON.stringify(mask));
-        Object.keys(fixed.orbits || {}).forEach((orbitKey) => {
-            const pieces = fixed.orbits[orbitKey].pieces || [];
-            pieces.forEach((piece) => {
-                piece.facelets = (piece.facelets || []).map((mode) => (
-                    mode === "dim" ? "regular" : mode
-                ));
-            });
-        });
-        player.experimentalStickeringMaskOrbits = fixed;
-    }).catch(() => {});
-}
-
-function makeTwistyPlayer(puzzleType, setup, alg, options = {}) {
-    const player = document.createElement("twisty-player");
-    player.setAttribute("puzzle", puzzleType);
-    if (options.visualization) player.setAttribute("visualization", options.visualization);
-    if (options.stickering) player.setAttribute("experimental-stickering", options.stickering);
-    if (options.mask) player.experimentalStickeringMaskOrbits = options.mask;
-    if (setup) player.setAttribute("experimental-setup-alg", setup);
-    if (alg) player.setAttribute("alg", alg);
-    player.setAttribute("control-panel", options.controlPanel || "none");
-    player.setAttribute("background", "none");
-    player.setAttribute("hint-facelets", "none");
-    player.setAttribute("autoplay", "false");
-    decorateTwistyElement(player, {
-        puzzle: puzzleType,
-        alg: alg || setup || "",
-        label: "公式状态平面图",
+function makeFlatState(puzzleType, setup, alg, options = {}) {
+    const view = document.createElement("div");
+    view.className = "flatCubePlayer";
+    view.dataset.layout = "cube-net";
+    view.innerHTML = flatCubeSVG(puzzleType, setup || alg || "", options.size || 96, {
+        label: options.label || "公式状态六面平面展开图",
     });
-    return player;
+    return view;
 }
 
 // 通用「单分类状态」列表：先用 2D 状态卡片展示每个 case，点卡片再看公式。
@@ -909,10 +759,6 @@ function renderCaseGrid(raw, containerDiv, puzzleKey, puzzleType, catKey, option
         card.dataset.caseName = name;
         card.title = `查看 ${name} 的公式`;
         const useLsllThumb = puzzleKey === "3x3" && String(catKey || "").indexOf("LSLL") === 0;
-        const viewMode = categoryViewMode(puzzleKey, catKey);
-        const yellowOnly = yellowOnlyCategory(puzzleKey, catKey);
-        const pairOnly = isF2LPairOnly(puzzleKey, catKey);
-        const stickering = stateStickering(puzzleKey, catKey);
         if (useLsllThumb) card.classList.add("lsllStateCard");
 
         const thumb = document.createElement("span");
@@ -921,7 +767,7 @@ function renderCaseGrid(raw, containerDiv, puzzleKey, puzzleType, catKey, option
         const displayAlg = normalizeFormulaAlg(puzzleKey, alg);
         const cubeOrder = CUBE_ORDER[puzzleKey];
         const useCubeFrame = Boolean(cubeOrder) && !useLsllThumb;
-        if (useCubeFrame) thumb.style.height = `${THUMB_3D_SIZE}px`;
+        if (useCubeFrame) thumb.style.height = `${THUMB_SIZE}px`;
         if (useLsllThumb) {
             const stateFacelets = displayAlg ? applyAlgToFacelets(invertAlg(displayAlg)) : "";
             if (stateFacelets) {
@@ -935,18 +781,10 @@ function renderCaseGrid(raw, containerDiv, puzzleKey, puzzleType, catKey, option
                 try {
                     const setup = normalizeFormulaAlg("sq1", invertAlg(displayAlg));
                     const pieces = await sq1PiecesFromAlg(setup);
-                    const sq1Mode = sq1ThumbMode(catKey);
-                    if (sq1Mode === "orientation") {
-                        // CO / EO / OBL：上下层分开的平面黑白图，不再受「顶面：黑」影响。
-                        thumb.innerHTML = sq1OrientationSVG(pieces, 170, {
-                            showEdges: catKey !== "CO",
-                        });
-                        thumb.classList.add("sq1FlatThumbWrap");
-                    } else {
-                        thumb.innerHTML = sq1ThumbSVG(pieces, SQ1_THUMB_SIZE, {
-                            mode: sq1Mode,
-                        });
-                    }
+                    thumb.innerHTML = sq1OrientationSVG(pieces, 170, {
+                        showEdges: catKey !== "CO",
+                    });
+                    thumb.classList.add("sq1FlatThumbWrap");
                 } catch (err) {
                     thumb.textContent = "状态";
                     thumb.classList.add("caseStateThumbEmpty");
@@ -955,70 +793,31 @@ function renderCaseGrid(raw, containerDiv, puzzleKey, puzzleType, catKey, option
         } else if (displayAlg) {
             lazyMountThumb(thumb, () => {
                 const stateFacelets = applyAlgToFaceletsForPuzzle(puzzleKey, invertAlg(displayAlg));
-                const thumbSide = () => {
+                if (stateFacelets) {
                     const order = Math.round(Math.sqrt(stateFacelets.length / 6));
-                    return (order + 2) * 10;
-                };
-                const drawFlat = () => {
-                    // 每格固定 10px；4x4 / 6x6 等按项目阶数一一对应，整体尺寸随阶数增加。
-                    const flatSize = thumbSide();
-                    // 空白框缩到平面图实际高度。
+                    const flatSize = (order + 2) * 10;
                     if (useCubeFrame) thumb.style.height = `${flatSize}px`;
-                    thumb.innerHTML = cubeThumbSVG(stateFacelets, flatSize, { forceFlat: true });
-                };
-                const addZblsOBadge = () => {
-                    if (card.querySelector(".caseStateBadge")) return;
-                    const badge = document.createElement("span");
-                    badge.className = "caseStateBadge";
-                    badge.textContent = "O";
-                    badge.title = "CubeRoot ZBLS O 组：最后一组已入槽，只剩顶层";
-                    card.appendChild(badge);
-                };
-
-                // OLL / OLL Parity 只看顶面黄色块。
-                if (yellowOnly && stateFacelets) {
-                    const flatSize = thumbSide();
-                    if (useCubeFrame) thumb.style.height = `${flatSize}px`;
-                    thumb.innerHTML = topFacePatternSVG(stateFacelets, flatSize, {
-                        label: puzzleKey === "2x2" ? "顶面状态" : "OLL 状态",
+                    thumb.innerHTML = cubeNetSVG(stateFacelets, flatSize, {
+                        label: "当前公式状态六面平面展开图",
                     });
-                    return;
-                }
-
-                // 三阶 ZBLS 固定 3D；O 组（最后一组已入槽）额外标 O。
-                if (puzzleKey === "3x3" && catKey === "ZBLS" && stateFacelets && isTopLayerOnly(stateFacelets)) {
-                    addZblsOBadge();
-                }
-
-                // CMLL 系列固定平面图：只关心顶层，不看底层。
-                if (viewMode === "flat" && stateFacelets) {
-                    drawFlat();
-                    return;
-                }
-
-                // 2x2 / 3x3 / 4x4 / 6x6 / 7x7：只有顶层未还原时用平面图；PBL / EG、5x5 保持 3D。
-                // LSE、ZBLS 固定 3D，避免平面图漏掉中层/最后一组的信息。
-                if (viewMode !== "3d"
-                    && FLAT_CUBE_PUZZLES.indexOf(puzzleKey) !== -1
-                    && !keepCategory3D(puzzleKey, catKey)
-                    && stateFacelets
-                    && isTopLayerOnly(stateFacelets)) {
-                    drawFlat();
+                    if (puzzleKey === "3x3" && catKey === "ZBLS" && isTopLayerOnly(stateFacelets)) {
+                        const badge = document.createElement("span");
+                        badge.className = "caseStateBadge";
+                        badge.textContent = "O";
+                        badge.title = "CubeRoot ZBLS O 组：最后一组已入槽，只剩顶层";
+                        card.appendChild(badge);
+                    }
                     return;
                 }
                 try {
-                    const visualization = puzzleKey === "skewb" ? "2D" : "3D";
-                    const player = makeTwistyPlayer(puzzleType, invertAlg(displayAlg), "", {
-                        visualization,
-                        stickering,
-                        mask: pairOnly ? F2L_PAIR_MASK : null,
+                    const player = makeFlatState(puzzleType, invertAlg(displayAlg), "", {
+                        size: THUMB_SIZE,
                     });
                     player.className = "caseStatePlayer";
-                    player.style.width = `${THUMB_3D_SIZE}px`;
-                    player.style.height = `${THUMB_3D_SIZE}px`;
-                    thumb.style.height = `${THUMB_3D_SIZE}px`;
+                    player.style.width = `${THUMB_SIZE}px`;
+                    player.style.height = `${THUMB_SIZE}px`;
+                    thumb.style.height = `${THUMB_SIZE}px`;
                     thumb.appendChild(player);
-                    if (stickering) keepSolvedStickers(player);
                 } catch (err) {
                     thumb.textContent = "状态";
                     thumb.classList.add("caseStateThumbEmpty");
@@ -1073,12 +872,11 @@ function renderCaseGrid(raw, containerDiv, puzzleKey, puzzleType, catKey, option
         const displayAlg = normalizeFormulaAlg(puzzleKey, alg);
         if (displayAlg) {
             try {
-                const player = makeTwistyPlayer(puzzleType, invertAlg(displayAlg), displayAlg, { controlPanel: "bottom-row" });
+                const player = makeFlatState(puzzleType, invertAlg(displayAlg), displayAlg, { size: 300 });
                 player.className = "formulaDetailPlayer";
                 viewer.appendChild(player);
-                watchPlayerForErrors(player, viewer, detail);
             } catch (err) {
-                viewer.textContent = "⚠️ 当前环境不支持3D渲染";
+                viewer.textContent = "⚠️ 当前公式状态无法生成平面图";
             }
         }
 
@@ -1182,9 +980,7 @@ function renderFamilyCaseStateList(raw, families, containerDiv, puzzleKey, puzzl
         intro.appendChild(introTitle);
         intro.appendChild(introNote);
 
-        const viewMode = categoryViewMode(puzzleKey, catKey);
         const thumbMode = familyThumbMode(puzzleKey, catKey);
-        const stickering = stateStickering(puzzleKey, catKey);
         const grid = document.createElement("div");
         grid.className = "formulaFamilyGrid";
         families.forEach((family) => {
@@ -1199,53 +995,21 @@ function renderFamilyCaseStateList(raw, families, containerDiv, puzzleKey, puzzl
             const displayAlg = sample ? normalizeFormulaAlg(puzzleKey, sample[1]) : "";
             const facelets = displayAlg ? applyAlgToFaceletsForPuzzle(puzzleKey, invertAlg(displayAlg)) : "";
 
-            const mountPlayer = () => {
-                lazyMountThumb(thumb, () => {
-                    try {
-                        const player = makeTwistyPlayer(puzzleType, invertAlg(displayAlg), "", {
-                            visualization: "3D",
-                            stickering,
-                        });
-                        player.className = "formulaFamilyPlayer";
-                        thumb.appendChild(player);
-                        if (stickering) keepSolvedStickers(player);
-                    } catch (err) {
-                        thumb.textContent = "分类";
-                        thumb.classList.add("formulaFamilyThumbEmpty");
-                    }
-                });
-            };
-
             if (facelets) {
+                let thumbFacelets = facelets;
                 if (thumbMode === "oll-state") {
                     const ollRow = familyOllRow(puzzleKey, catKey, family.key);
                     const ollAlg = ollRow ? normalizeFormulaAlg(puzzleKey, ollRow[1]) : "";
                     const ollFacelets = ollAlg
                         ? applyAlgToFaceletsForPuzzle(puzzleKey, invertAlg(ollAlg))
                         : "";
-                    thumb.innerHTML = topFacePatternSVG(ollFacelets || facelets, 54);
-                } else if (thumbMode === "top-yellow") {
-                    thumb.innerHTML = topFacePatternSVG(facelets, 54, { label: "顶面状态" });
-                } else if (thumbMode === "zbls-3d") {
-                    lazyMountThumb(thumb, () => {
-                        try {
-                            const player = makeTwistyPlayer(puzzleType, invertAlg(displayAlg), "", { visualization: "3D" });
-                            player.setAttribute("experimental-stickering", "ZBLS");
-                            player.className = "formulaFamilyPlayer";
-                            thumb.appendChild(player);
-                            keepSolvedStickers(player);
-                        } catch (err) {
-                            thumb.textContent = "分类";
-                            thumb.classList.add("formulaFamilyThumbEmpty");
-                        }
-                    });
-                } else if (viewMode === "3d") {
-                    mountPlayer();
-                } else if (viewMode === "flat" || isTopLayerOnly(facelets)) {
-                    thumb.innerHTML = cubeThumbSVG(facelets, 54, { forceFlat: true });
-                } else {
-                    mountPlayer();
+                    if (ollFacelets) thumbFacelets = ollFacelets;
                 }
+                lazyMountThumb(thumb, () => {
+                    thumb.innerHTML = cubeNetSVG(thumbFacelets, 54, {
+                        label: "当前公式状态六面平面展开图",
+                    });
+                });
             } else {
                 thumb.textContent = "分类";
                 thumb.classList.add("formulaFamilyThumbEmpty");
@@ -1351,7 +1115,7 @@ function renderFormulaRows(raw, containerDiv, puzzleKey, puzzleType, catKey = ""
         item.appendChild(viewer);
 
         item.onclick = (e) => {
-            if (e.target.tagName.toLowerCase() === "twisty-player") return;
+            if (e.target.closest(".flatCubePlayer")) return;
             const box = item.querySelector(".twistContainer");
 
             if (item.dataset.open === "true") {
@@ -1372,13 +1136,10 @@ function renderFormulaRows(raw, containerDiv, puzzleKey, puzzleType, catKey = ""
             const setup = invertAlg(displayAlg);
 
             try {
-                const player = makeTwistyPlayer(puzzleType, setup, displayAlg, {
-                    controlPanel: "bottom-row",
-                });
+                const player = makeFlatState(puzzleType, setup, displayAlg, { size: 220 });
                 box.appendChild(player);
-                watchPlayerForErrors(player, box, item);
             } catch (err) {
-                box.textContent = "⚠️ 当前环境不支持3D渲染";
+                box.textContent = "⚠️ 当前公式状态无法生成平面图";
             }
             item.dataset.open = "true";
         };
@@ -1404,56 +1165,6 @@ function renderFormulaRows(raw, containerDiv, puzzleKey, puzzleType, catKey = ""
     drawPage(1, false);
 }
 
-// twisty-player 是异步校验公式的；如果原始记法在对应魔方上无法解析，
-// 移除空白播放器并给出提示，避免留下一个不动的 3D 区域。
-function watchPlayerForErrors(player, box, item) {
-    const model = player.experimentalModel;
-    if (!model || !model.puzzleAlg || !model.puzzleSetupAlg) {
-        loadTwisty().then((ready) => {
-            if (ready && player.isConnected && player.parentNode === box) {
-                watchPlayerForErrors(player, box, item);
-            }
-        });
-        return;
-    }
-
-    Promise.all([model.puzzleAlg.get(), model.puzzleSetupAlg.get()])
-        .then(([algProp, setupProp]) => {
-            if (item.dataset.open !== "true" || !box.isConnected) return;
-            if (player.parentNode !== box) return; // 已被收起或重新展开
-            const errors = []
-                .concat((algProp && algProp.issues && algProp.issues.errors) || [])
-                .concat((setupProp && setupProp.issues && setupProp.issues.errors) || []);
-            if (!errors.length) return;
-
-            while (box.firstChild) box.removeChild(box.firstChild);
-            const tip = document.createElement("div");
-            tip.className = "twistUnsupported";
-            tip.textContent = describePlayerErrors(errors);
-            box.appendChild(tip);
-        })
-        .catch(() => {
-            // 校验失败不拦截用户查看公式文本
-        });
-}
-
-// 把 cubing.js 的英文报错提炼成用户能看懂的提示，方便定位原始记法问题。
-function describePlayerErrors(errors) {
-    const text = errors.join(" | ");
-    const badMoves = Array.from(new Set(
-        Array.from(text.matchAll(/Bad move ([^\s,)]+)/g), (m) => m[1])
-            .concat(Array.from(text.matchAll(/Could not split ([^\s,)]+) into face names/g), (m) => m[1]))
-    ));
-    if (badMoves.length) {
-        return `⚠️ 该公式含暂不支持的动作：${badMoves.join("、")}`;
-    }
-    if (/Unexpected character|internal parsing error|unexpected parsing/i.test(text)) {
-        return "⚠️ 该公式的原始记法不完整或格式异常，暂不支持 3D 演示";
-    }
-    return "⚠️ 该公式的原始记法暂不支持 3D 演示";
-}
-
 export function initFormulaUI() {
     buildFormulaUI();
-    loadTwisty();
 }

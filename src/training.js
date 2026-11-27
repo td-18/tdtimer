@@ -13,7 +13,7 @@ import {
 } from "./algNotation.js";
 import { renderHist } from "./records.js";
 import { loadAllLsllOneStep } from "./lsllLoader.js";
-import { decorateTwistyElement } from "./twistyView.js";
+import { renderFlatCube } from "./flatCubeView.js";
 import { invertAlg } from "./algInverse.js";
 
 function resetSetSelect() {
@@ -169,7 +169,7 @@ export function nextTrainingScramble() {
         const puzzle = getTwistyPuzzle(puzzleKey);
         cube.setAttribute("puzzle", puzzle);
         cube.setAttribute("alg", full);
-        decorateTwistyElement(cube, {
+        renderFlatCube(cube, {
             puzzle,
             alg: full,
             label: `${cat.key} ${name} 训练状态`,
@@ -222,7 +222,7 @@ export function stopTraining() {
     if (cube) {
         cube.setAttribute("puzzle", state.puzzle.puzzle || state.puzzle.key);
         cube.removeAttribute("alg");
-        decorateTwistyElement(cube, {
+        renderFlatCube(cube, {
             puzzle: state.puzzle.puzzle || state.puzzle.key,
             alg: "",
             label: "训练待开始",

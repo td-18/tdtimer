@@ -9,12 +9,7 @@
 </head>
 <body>
 <header class="app-header">
-    <a class="brand" href="index.html" aria-label="TDtimer 首页">TDtimer</a>
-    <nav class="module-nav" aria-label="功能模块">
-        <a href="timer.html" aria-current="page">计时</a>
-        <a href="formula.html">公式</a>
-        <a href="training.html">训练</a>
-    </nav>
+    <span class="brand">TDtimer · 计时</span>
     <div class="timer-tools" aria-label="计时工具">
         <button id="navBluetooth" title="蓝牙" aria-label="蓝牙" aria-haspopup="dialog" aria-expanded="false">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f2341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -80,9 +75,9 @@
                     <p id="tipText"></p>
                 </div>
 
-                <div id="scrambleViewer">
-                    <twisty-player id="scrambleCube" puzzle="3x3x3" background="none" control-panel="none"></twisty-player>
-                </div>
+            <div id="scrambleViewer">
+                <div id="scrambleCube" class="flatCubeStage"></div>
+            </div>
             </div>
         </div>
     </section>

@@ -8,61 +8,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="app-header">
-    <a class="brand" href="index.html" aria-label="TDtimer 首页">TDtimer</a>
-    <nav class="module-nav" aria-label="功能模块">
-        <a href="timer.html">计时</a>
-        <a href="formula.html">公式</a>
-        <a href="training.html">训练</a>
-    </nav>
-</header>
-
-<main class="home-main">
-    <section class="home-intro" aria-labelledby="homeTitle">
-        <div class="home-copy">
-            <p class="eyebrow">WCA 本地工具</p>
-            <h1 id="homeTitle">选择要开始的工作</h1>
-            <p class="home-lead">计时、查公式、练公式各自独立加载，打开首页不需要等待计时器、公式数据或 3D 模块。</p>
-        </div>
-        <div class="home-cube-art" role="img" aria-label="三阶魔方六面平面展开图">
-            <svg viewBox="0 0 216 162" xmlns="http://www.w3.org/2000/svg">
-                <rect width="216" height="162" rx="14" fill="#eef6ff"/>
-                <g stroke="#15243a" stroke-width="1.2" stroke-linejoin="round">
-                    <g fill="#ffffff" transform="translate(54 18)">
-                        <rect width="18" height="18"/><rect x="18" width="18" height="18"/><rect x="36" width="18" height="18"/>
-                        <rect y="18" width="18" height="18"/><rect x="18" y="18" width="18" height="18"/><rect x="36" y="18" width="18" height="18"/>
-                        <rect y="36" width="18" height="18"/><rect x="18" y="36" width="18" height="18"/><rect x="36" y="36" width="18" height="18"/>
-                    </g>
-                    <g fill="#ff9f43" transform="translate(0 54)">
-                        <rect width="18" height="18"/><rect x="18" width="18" height="18"/><rect x="36" width="18" height="18"/>
-                        <rect y="18" width="18" height="18"/><rect x="18" y="18" width="18" height="18"/><rect x="36" y="18" width="18" height="18"/>
-                        <rect y="36" width="18" height="18"/><rect x="18" y="36" width="18" height="18"/><rect x="36" y="36" width="18" height="18"/>
-                    </g>
-                    <g fill="#35b86b" transform="translate(54 54)">
-                        <rect width="18" height="18"/><rect x="18" width="18" height="18"/><rect x="36" width="18" height="18"/>
-                        <rect y="18" width="18" height="18"/><rect x="18" y="18" width="18" height="18"/><rect x="36" y="18" width="18" height="18"/>
-                        <rect y="36" width="18" height="18"/><rect x="18" y="36" width="18" height="18"/><rect x="36" y="36" width="18" height="18"/>
-                    </g>
-                    <g fill="#e5484d" transform="translate(108 54)">
-                        <rect width="18" height="18"/><rect x="18" width="18" height="18"/><rect x="36" width="18" height="18"/>
-                        <rect y="18" width="18" height="18"/><rect x="18" y="18" width="18" height="18"/><rect x="36" y="18" width="18" height="18"/>
-                        <rect y="36" width="18" height="18"/><rect x="18" y="36" width="18" height="18"/><rect x="36" y="36" width="18" height="18"/>
-                    </g>
-                    <g fill="#3978d4" transform="translate(162 54)">
-                        <rect width="18" height="18"/><rect x="18" width="18" height="18"/><rect x="36" width="18" height="18"/>
-                        <rect y="18" width="18" height="18"/><rect x="18" y="18" width="18" height="18"/><rect x="36" y="18" width="18" height="18"/>
-                        <rect y="36" width="18" height="18"/><rect x="18" y="36" width="18" height="18"/><rect x="36" y="36" width="18" height="18"/>
-                    </g>
-                    <g fill="#ffd43b" transform="translate(54 108)">
-                        <rect width="18" height="18"/><rect x="18" width="18" height="18"/><rect x="36" width="18" height="18"/>
-                        <rect y="18" width="18" height="18"/><rect x="18" y="18" width="18" height="18"/><rect x="36" y="18" width="18" height="18"/>
-                        <rect y="36" width="18" height="18"/><rect x="18" y="36" width="18" height="18"/><rect x="36" y="36" width="18" height="18"/>
-                    </g>
-                </g>
-            </svg>
-        </div>
-    </section>
-
+<main class="home-main home-main-simple">
     <section class="module-grid" aria-label="选择功能">
         <a class="module-card" href="timer.html">
             <span class="module-card-index">01</span>
@@ -72,7 +18,7 @@
         <a class="module-card" href="formula.html">
             <span class="module-card-index">02</span>
             <strong>公式</strong>
-            <span>浏览分类、状态和公式；3D 作为异步增强，失败时显示平面图。</span>
+            <span>浏览分类、状态和公式，状态以完整六面平面展开图展示。</span>
         </a>
         <a class="module-card" href="training.html">
             <span class="module-card-index">03</span>

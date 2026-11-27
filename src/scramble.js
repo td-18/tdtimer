@@ -2,7 +2,7 @@
 import { state, fData } from "./state.js";
 import { getScrambleService } from "./scramble/wca/index.js";
 import { settleWithin } from "./loadGuard.js";
-import { decorateTwistyElement } from "./twistyView.js";
+import { renderFlatCube } from "./flatCubeView.js";
 
 let randomScrambleForEvent = null;
 let libFailed = false;
@@ -172,7 +172,11 @@ function setScramble(text, fallback, puzzleKey) {
         // 先设置 puzzle 再设置 alg，避免切换项目后残留上一把的算法
         if (puzzleKey) cube.setAttribute("puzzle", puzzleKey);
         cube.setAttribute("alg", text);
-        decorateTwistyElement(cube, { puzzle: puzzleKey, alg: text, label: "打乱状态" });
+        renderFlatCube(cube, {
+            puzzle: puzzleKey,
+            alg: text,
+            label: "当前打乱状态的六面平面展开图",
+        });
     }
     warn.style.display = fallback ? "block" : "none";
     if (fallback) warn.textContent = "⚠️ 降级：本地打乱";
@@ -187,7 +191,11 @@ function showOffline(puzzleKey) {
     if (cube) {
         if (puzzleKey) cube.setAttribute("puzzle", puzzleKey);
         cube.removeAttribute("alg");
-        decorateTwistyElement(cube, { puzzle: puzzleKey, alg: "", label: "打乱状态" });
+        renderFlatCube(cube, {
+            puzzle: puzzleKey,
+            alg: "",
+            label: "当前打乱状态的六面平面展开图",
+        });
     }
 }
 

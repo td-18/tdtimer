@@ -4,9 +4,8 @@
 
 - 纯静态站点：四个入口 HTML + `styles.css` + 原生 ES Module，无打包、无构建。
 - 部署：Cloudflare Pages，推送即上线。
-- 外部能力：cubing.js 通过 CDN（`https://cdn.cubing.net/v0/...`）提供
-  3D `twisty-player`、公式状态计算和部分打乱兜底；异步加载、5 秒超时，
-  失败时保留平面状态图，不得阻塞主应用。
+- 外部能力：cubing.js 通过 CDN 提供部分打乱兜底和 SQ1 公式状态计算；
+  打乱加载有 5 秒超时。所有可见魔方状态使用本地平面展开图，不加载 3D。
 - 目标环境：手机 Chrome / Safari，触控优先；桌面可用。
 - 测试：Node 内置 `node --test`，不安装额外测试框架。
 - 静态检查：ESLint（仅开发期，`npm run lint`），只做正确性检查，不参与
@@ -17,7 +16,7 @@
 ## 目录与模块
 
 ```text
-index.html            首页：三模块导航 + 纯 SVG 六面平面展开图
+index.html            首页：计时 / 公式 / 训练三个入口板块
 timer.html            计时入口：计时、蓝牙、设置
 formula.html          公式入口：公式库浏览
 training.html         训练入口：现有分组 / 套训练 + 计时记录
@@ -34,7 +33,7 @@ src/
   training-entry.js   训练页装配
   main.js             旧入口兼容，转发到 timer-entry
   loadGuard.js        Promise 超时保护
-  twistyView.js       cubing.js 3D 异步加载与平面图降级
+  flatCubeView.js     本地六面平面展开图渲染
   algInverse.js       不依赖 CDN 的公式求逆
   lsllLoader.js       一步 LSLL 大类文件按需加载
   state.js            全局状态、17 个项目列表、常量、兜底公式
@@ -44,12 +43,12 @@ src/
   timer.js            计时状态机、观察、触控 / 键盘输入
   ui.js               页签与项目下拉
   scramble.js         计时页打乱调度、cubing.js 超时与本地降级
-  formula.js          公式库浏览、状态卡、3D 演示
+  formula.js          公式库浏览与状态卡平面展示
   training.js         训练分组、套选择与训练题生成
   formulaSets.js      项目分组 / 套的元数据
   formulaFamilies.js  家族分类规则（ZBLL、COLL 等）
   algNotation.js      公式记号、视角与项目映射
-  cubeThumb.js        平面 / 3D 缩略图绘制
+  cubeThumb.js        平面缩略图、六面展开图与贴纸模拟
   sq1Thumb.js         SQ1 自绘缩略图与黑白平面图
   puzzleIcons.js      WCA 项目图标
   scramble/wca/       本地 WCA 打乱引擎
@@ -81,7 +80,7 @@ docs/                 项目文档与 AI 文档库
 ### 页面加载边界
 
 - 首页不加载 `data/`、应用模块或 cubing.js；六面展开图是内联 SVG。
-- 计时页只加载计时、成绩、蓝牙、打乱与 3D 降级依赖，不加载公式数据。
+- 计时页只加载计时、成绩、蓝牙、打乱与平面状态图，不加载公式数据。
 - 公式页加载 `data/cuberoot.js`、`data/lsll.js`、`formulas.js` 和公式浏览模块，
   不加载计时、成绩或蓝牙。
 - 训练页加载公式数据、训练、计时和成绩，不加载 WCA worker；训练题由公式求逆生成。
@@ -112,11 +111,10 @@ docs/                 项目文档与 AI 文档库
 
 - 数据来源：`window.FormulaDB`（`data/cuberoot.js`）、`data/lsll.js`、
   `data/lsll-one-step/*.js`。
-- 浏览结构：状态卡 → 公式 + 3D 演示；三级 / 二阶部分分类多一层家族。
-- 状态与缩略图：由公式反推状态，平面图 / 3D 按分类规则选择；
-  SQ1 使用自绘缩略图；缩略图进入视口前不创建 3D 场景。
-- cubing.js 的 `twisty-player` 与图标样式异步加载；5 秒超时或加载失败时，
-  每个 3D 位置显示平面状态图和“已降级”提示。
+- 浏览结构：状态卡 → 公式 + 完整平面状态；三级 / 二阶部分分类多一层家族。
+- 状态与缩略图：由公式反推状态，立方体统一显示完整六面展开图；
+  SQ1 使用自绘平面图；缩略图进入视口前不创建。
+- 立方体状态使用本地六面平面展开图；打乱后的 U/L/F/R/B/D 六个面都会更新。
 - 分页只用于 LSLL；其他分类一次展示全部状态。
 - 详细绘制规则见 [`../formula-thumbnails.md`](../formula-thumbnails.md)。
 
@@ -124,6 +122,7 @@ docs/                 项目文档与 AI 文档库
 
 - 训练页复用公式库的项目、分组与套元数据；一步 LSLL 在选择后按批加载。
 - 训练题从当前分组 / 套随机公式生成，通过 `algInverse.js` 求逆作为打乱。
+- 训练页用一个连续页面选择分组、启动训练、计时和记录成绩；功能页之间不再提供跳转按钮。
 - 训练成绩继续使用 `td_records_<puzzle>_<group>[_<cat>]`，计时规则与普通计时相同。
 - 计时器通过回调接入下一步：计时页生成下一把 WCA 打乱，训练页生成下一道训练题。
 

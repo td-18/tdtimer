@@ -618,3 +618,50 @@ export function cubeThumbSVG(facelets, size = 96, options = {}) {
     if (isTopLayerOnly(fd)) return flatTopSVG(fd, size, n);
     return foldedCubeSVG(fd, size, n, options);
 }
+
+export function cubeNetFaces(facelets) {
+    let fd = String(facelets || "");
+    let n = orderFromFacelets(fd);
+    if (!n) {
+        n = 3;
+        fd = fd.padEnd(54, "o");
+    }
+    return Array.from({ length: 6 }, (_, index) => fd.slice(index * n * n, (index + 1) * n * n));
+}
+
+// 六面平面展开图。U 在上，L/F/R/B 横向展开，D 在下；
+// 六个面的全部贴纸都参与绘制，用于计时打乱和公式状态的完整平面展示。
+export function cubeNetSVG(facelets, size = 240, options = {}) {
+    const faces = cubeNetFaces(facelets);
+    const n = Math.round(Math.sqrt(faces[0].length));
+    const positions = {
+        u: [1, 0],
+        l: [0, 1],
+        f: [1, 1],
+        r: [2, 1],
+        b: [3, 1],
+        d: [1, 2],
+    };
+    const labels = { u: "U", l: "L", f: "F", r: "R", b: "B", d: "D" };
+    const width = 4 * n;
+    const height = 3 * n;
+    const cells = [];
+
+    FACE_KEYS.forEach((faceKey, faceIndex) => {
+        const [faceX, faceY] = positions[faceKey];
+        const stickers = [];
+        for (let row = 0; row < n; row++) {
+            for (let col = 0; col < n; col++) {
+                const value = faces[faceIndex][row * n + col] || "o";
+                stickers.push(`<rect x="${faceX * n + col}" y="${faceY * n + row}" width="1" height="1" `
+                    + `fill="${COLORS[value] || COLORS.o}" stroke="#111111" stroke-width="0.035"/>`);
+            }
+        }
+        cells.push(`<g data-face="${faceKey}" aria-label="${labels[faceKey]} 面">${stickers.join("")}</g>`);
+    });
+
+    const label = options.label || "魔方六面平面展开图";
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" `
+        + `width="${size}" height="${Math.round(size * height / width)}" `
+        + `data-layout="cube-net" role="img" aria-label="${label}">${cells.join("")}</svg>`;
+}

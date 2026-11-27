@@ -6,16 +6,37 @@ body{
     touch-action:manipulation; overflow-x: hidden;
     user-select: none; -webkit-user-select: none;
 }
-h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bottom: 8px; letter-spacing: 1px;}
 
-/* ===== 顶部栏 ===== */
-.top-bar{display:flex; justify-content:center; align-items:center; gap:12px; margin-bottom: 20px;}
-#navBluetooth, #navSettings, #navSolver{
+/* ===== 三模块顶部导航 ===== */
+.app-header {
+    max-width: 900px; margin: 0 auto 22px;
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; gap: 16px;
+}
+.brand {
+    justify-self: start; color: #0f2341; text-decoration: none;
+    font-size: 22px; font-weight: 900; letter-spacing: 1px;
+}
+.module-nav {
+    display: flex; gap: 4px; padding: 4px;
+    border: 1px solid rgba(203, 220, 235, 0.75);
+    border-radius: 30px; background: #fff;
+    box-shadow: 0 3px 14px rgba(15, 35, 65, 0.05);
+}
+.module-nav a {
+    min-width: 88px; padding: 10px 20px; border-radius: 24px;
+    color: #52657a; text-align: center; text-decoration: none;
+    font-size: 15px; font-weight: 800; transition: background 0.2s, color 0.2s;
+}
+.module-nav a:hover { background: #f0f6fc; color: #0f2341; }
+.module-nav a[aria-current="page"] { background: #1b5eb5; color: #fff; }
+.timer-tools { justify-self: end; display: flex; align-items: center; gap: 8px; }
+#navBluetooth, #navSettings{
     background:none; border:none; cursor:pointer; color:#0f2341; 
     width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     transition: background 0.2s;
 }
-#navBluetooth:hover, #navSettings:hover, #navSolver:hover{background: rgba(0,0,0,0.05);}
+#navBluetooth:hover, #navSettings:hover{background: rgba(0,0,0,0.05);}
 .puzzleDropdownWrap{position:relative; width:fit-content;}
 #puzzleMainBtn{padding:6px 24px; border:2px solid #cbdceb; background:#fff; border-radius:20px; font-size:14px; font-weight:bold; cursor:pointer; color:#0f2341; outline:none; transition: all 0.2s;}
 #puzzleMainBtn:hover{border-color:#a3c2e0;}
@@ -26,10 +47,39 @@ h1{text-align:center; font-size:22px; font-weight:800; color:#0f2341; margin-bot
 .puzzleOption:hover{background:#f0f5fa;}
 .puzzleOption.active{background:#0f2341; color:#fff; border-radius:8px; margin:0 6px; padding:9px 14px;}
 
-/* ===== 主导航 Tab ===== */
-.tab{display:flex; gap:8px; max-width: 800px; margin: 0 auto 25px; background: #fff; padding: 4px; border-radius: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);}
-.tab button{flex:1; padding:12px; border:none; background:transparent; border-radius: 26px; font-size:16px; font-weight:bold; color:#555; cursor:pointer; transition: all 0.3s;}
-.tab button.active{background:#1b5eb5; color:#fff;}
+/* ===== 首页 ===== */
+.home-main { max-width: 980px; margin: 55px auto 0; }
+.home-intro {
+    display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+    align-items: center; gap: 54px;
+}
+.eyebrow {
+    margin-bottom: 12px; color: #1b5eb5;
+    font-size: 12px; font-weight: 900; letter-spacing: 2px;
+}
+.home-copy h1 {
+    margin: 0; color: #0f2341;
+    font-size: clamp(40px, 6vw, 68px); line-height: 1.05; letter-spacing: -2px;
+}
+.home-lead {
+    max-width: 570px; margin-top: 22px;
+    color: #52657a; font-size: 17px; line-height: 1.8;
+}
+.home-cube-art { display: flex; justify-content: center; }
+.home-cube-art svg { width: min(100%, 390px); height: auto; filter: drop-shadow(0 22px 28px rgba(15,35,65,0.12)); }
+.module-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 52px; }
+.module-card {
+    position: relative; min-height: 180px; padding: 24px;
+    display: flex; flex-direction: column; gap: 12px;
+    border: 1px solid #dce9f7; border-radius: 18px;
+    background: rgba(255,255,255,0.88); color: #52657a; text-decoration: none;
+    box-shadow: 0 10px 30px rgba(15,35,65,0.05);
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.module-card:hover { transform: translateY(-4px); border-color: #9fc1e6; box-shadow: 0 16px 36px rgba(15,35,65,0.1); }
+.module-card strong { margin-top: auto; color: #0f2341; font-size: 27px; }
+.module-card span:last-child { font-size: 14px; line-height: 1.7; }
+.module-card-index { color: #7da4cd; font-size: 12px; font-weight: 900; letter-spacing: 1px; }
 
 /* ===== 页面容器 ===== */
 .page { max-width: 900px; margin: 0 auto; }
@@ -129,6 +179,7 @@ body:has(.modal-card-overlay.show) { overflow: hidden; }
 #statPanel td:first-child { text-align: left; padding-left: 10px; font-weight: bold; color: #555;}
 
 #historyPanel { display: none; flex-direction: column; padding: 10px; max-height: 320px; overflow-y: auto;}
+.history-hint { color:#888; font-size:13px; }
 .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
 #clearRecordsBtn { background: #fff2f2; color: #c82423; border: 1px solid #ffcccc; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;}
 .history-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; cursor: pointer; font-size: 15px; border-radius: 6px; transition: background 0.2s;}
@@ -168,7 +219,25 @@ body:has(.modal-card-overlay.show) { overflow: hidden; }
 #timeDisplay.observe { color: #dd2222; }
 #tipText { display: none; } 
 
-#scrambleViewer { width: 240px; height: 240px; margin-top: 10px;}
+#scrambleViewer { width: 240px; min-height: 240px; margin-top: 10px; display:flex; align-items:center; justify-content:center;}
+#scrambleViewer twisty-player { width:100%; height:100%; }
+
+/* cubing.js 异步加载失败时，所有 3D 位置都保留可用的平面状态图。 */
+twisty-player[data-td-fallback] {
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; border-radius: 10px;
+}
+.twistyFallbackInner {
+    width: 100%; height: 100%; padding: 6px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.twistyFallbackInner svg { display:block; max-width:100%; max-height:100%; }
+.twistyFallbackNote { color:#7a5a00; font-size:11px; line-height:1.3; text-align:center; }
+.caseStateThumb .twistyFallbackNote,
+.formulaFamilyThumb .twistyFallbackNote,
+.lsllCaseThumb .twistyFallbackNote,
+.zbllNameThumb .twistyFallbackNote { display:none; }
+.warn-text { display:none; color:#c82423; font-size:12px; margin-top:5px; }
 
 /* ===== 公式库区域 ===== */
 .trainerPanel { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; padding: 15px; background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);}
@@ -330,6 +399,22 @@ body:has(.modal-card-overlay.show) { overflow: hidden; }
 .twistUnsupported { align-self: center; color: #8a6d3b; background: #fff8e6; border: 1px solid #f0d9a8; border-radius: 8px; padding: 12px 16px; font-size: 14px;}
 
 @media (max-width: 768px) {
+    body { padding: 14px 14px 32px; }
+    .app-header {
+        grid-template-columns: 1fr auto;
+        gap: 10px 12px;
+    }
+    .brand { font-size: 19px; }
+    .module-nav { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+    .module-nav a { flex: 1; min-width: 0; padding: 9px 10px; }
+    .timer-tools { grid-column: 2; grid-row: 1; }
+    .home-main { margin-top: 34px; }
+    .home-intro { grid-template-columns: 1fr; gap: 28px; }
+    .home-copy h1 { font-size: clamp(36px, 12vw, 54px); }
+    .home-cube-art { order: -1; }
+    .home-cube-art svg { width: min(100%, 320px); }
+    .module-grid { grid-template-columns: 1fr; margin-top: 34px; }
+    .module-card { min-height: 140px; }
     .timer-layout { flex-direction: column-reverse; align-items: center;}
     .left-col { width: 100%; align-items: center; padding-top: 30px; align-self: center;}
     .right-col { width: 100%;}

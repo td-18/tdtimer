@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>TDtimer · 公式</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+<script src="data/cuberoot.js"></script>
+<script src="data/lsll.js"></script>
+<script src="formulas.js"></script>
+</head>
+<body>
+<header class="app-header">
+    <a class="brand" href="index.html" aria-label="TDtimer 首页">TDtimer</a>
+    <nav class="module-nav" aria-label="功能模块">
+        <a href="timer.html">计时</a>
+        <a href="formula.html" aria-current="page">公式</a>
+        <a href="training.html">训练</a>
+    </nav>
+</header>
+
+<main class="page">
+    <div class="formulaLibraryBar">
+        <button type="button" id="formulaLibraryBtn" class="formulaLibraryBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="formulaLibraryModal">
+            <span class="formulaLibraryIcon" id="formulaLibraryIcon"></span>
+            <span class="formulaLibraryName" id="formulaLibraryName">三阶</span>
+            <svg class="formulaLibraryChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6 6-6"></path>
+            </svg>
+        </button>
+    </div>
+    <div id="dynamicFormulaUI"></div>
+
+    <div id="formulaLibraryModal" class="modal-card-overlay" role="dialog" aria-modal="true" aria-labelledby="formulaLibraryTitle">
+        <div class="modal-card formula-library-card">
+            <button type="button" class="modal-card-close" id="closeFormulaLibraryBtn" aria-label="关闭公式库选择">×</button>
+            <h3 id="formulaLibraryTitle">选择公式库</h3>
+            <div id="formulaLibraryGrid" class="formula-library-grid" role="menu" aria-labelledby="formulaLibraryTitle"></div>
+        </div>
+    </div>
+</main>
+
+<script type="module" src="src/formula-entry.js"></script>
+</body>
+</html>

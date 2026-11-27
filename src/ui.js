@@ -1,26 +1,7 @@
 // 页面导航与魔方项目下拉（WCA 全部 17 个项目）
 import { pList, state } from "./state.js";
 
-export function showPage(id, clearTabs = false) {
-    document.querySelectorAll(".page").forEach((p) => (p.style.display = "none"));
-    const page = document.getElementById(id);
-    if (page) page.style.display = "block";
-    if (clearTabs) {
-        document.querySelectorAll(".tab button").forEach((b) => b.classList.remove("active"));
-    }
-}
-
-export function showTab(id) {
-    document.querySelectorAll(".tab button").forEach((b) => {
-        b.classList.toggle("active", b.dataset.tab === id);
-    });
-    showPage(id);
-}
-
 export function initNav() {
-    document.querySelectorAll(".tab button").forEach((btn) => {
-        btn.onclick = () => showTab(btn.dataset.tab);
-    });
     // 蓝牙、设置均以卡片弹窗展示
     const bindCardModal = (modalId, buttonId, closeBtnId) => {
         const modal = document.getElementById(modalId);

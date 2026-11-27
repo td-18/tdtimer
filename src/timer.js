@@ -1,13 +1,14 @@
 // 计时状态机：idle → readyCount(0.8s) → ready → running；支持 15s 观察
 import { state } from "./state.js";
 import { addRecord } from "./records.js";
-import { genScr } from "./scramble.js";
 
 const HOLD_MS = 800;
 const OBSERVE_MS = 15000;
 const OBSERVE_DNF_MS = 17000;
 
-export function initTimer() {
+export function initTimer(options = {}) {
+    const onStart = typeof options.onStart === "function" ? options.onStart : null;
+    const onStop = typeof options.onStop === "function" ? options.onStop : null;
     const tDom = document.getElementById("timeDisplay");
     let tState = "idle";
     let startAt = 0;
@@ -38,6 +39,7 @@ export function initTimer() {
         clearTimers();
         startAt = performance.now();
         tState = "running";
+        if (onStart) onStart();
         tDom.className = "";
         const loop = () => {
             if (tState !== "running") return;
@@ -57,7 +59,7 @@ export function initTimer() {
         over = false;
         clearTimers();
         tDom.className = "";
-        genScr();
+        if (onStop) onStop();
     }
 
     function startObserve() {
@@ -74,7 +76,7 @@ export function initTimer() {
                 reset();
                 tDom.className = "observe";
                 tDom.textContent = "DNF";
-                genScr();
+                if (onStop) onStop();
                 return;
             }
             if (elapsed >= OBSERVE_MS) {
@@ -159,9 +161,11 @@ export function initTimer() {
     // 左侧面板、3D 魔方、弹窗、按钮都不触发计时
     function isInteractive(target) {
         if (!target || typeof target.closest !== "function") return false;
-        return target.closest("button") ||
+        return target.closest("header") ||
+            target.closest("button") ||
             target.closest("input") ||
             target.closest("label") ||
+            target.closest(".trainerPanel") ||
             target.closest("#puzzleDropdownList") ||
             target.closest(".puzzleOption") ||
             target.closest("#detailModal") ||

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>TDtimer · 计时</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="app-header">
+    <a class="brand" href="index.html" aria-label="TDtimer 首页">TDtimer</a>
+    <nav class="module-nav" aria-label="功能模块">
+        <a href="timer.html" aria-current="page">计时</a>
+        <a href="formula.html">公式</a>
+        <a href="training.html">训练</a>
+    </nav>
+    <div class="timer-tools" aria-label="计时工具">
+        <button id="navBluetooth" title="蓝牙" aria-label="蓝牙" aria-haspopup="dialog" aria-expanded="false">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f2341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 7l10 10-5 5V2l5 5L7 17"></path>
+            </svg>
+        </button>
+        <div class="puzzleDropdownWrap">
+            <button type="button" id="puzzleMainBtn" aria-haspopup="menu" aria-expanded="false">三阶</button>
+            <div id="puzzleDropdownList" role="menu"></div>
+        </div>
+        <button id="navSettings" title="设置" aria-label="设置" aria-haspopup="dialog" aria-expanded="false">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f2341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+        </button>
+    </div>
+</header>
+
+<main>
+    <!-- 计时页面 -->
+    <section id="timer" class="page">
+        <div class="timer-layout">
+            <!-- 左侧：观察 + 统计/成绩 (不触发计时) -->
+            <div class="left-col">
+                <div id="observeBadge" class="observe-badge" hidden>15 秒观察已开启</div>
+                <div class="panel-toggle">
+                    <button type="button" id="btnStatTab" class="active">统计</button>
+                    <button type="button" id="btnHistoryTab">成绩</button>
+                </div>
+
+                <div id="statPanel">
+                    <table>
+                        <tr><th>单次</th><th>当前</th><th>最佳</th></tr>
+                        <tr><td>单次</td><td id="curSingle">-</td><td id="bestSingle">-</td></tr>
+                        <tr><td>mo3</td><td id="mo3">-</td><td id="bestMo3">-</td></tr>
+                        <tr><td>ao5</td><td id="ao5">-</td><td id="bestAo5">-</td></tr>
+                        <tr><td>ao12</td><td id="ao12">-</td><td id="bestAo12">-</td></tr>
+                        <tr><td>ao50</td><td id="ao50">-</td><td id="bestAo50">-</td></tr>
+                        <tr><td>ao100</td><td id="ao100">-</td><td id="bestAo100">-</td></tr>
+                    </table>
+                </div>
+
+                <div id="historyPanel">
+                    <div class="history-head">
+                        <span style="font-size:13px; color:#888;">点击记录查看打乱</span>
+                        <button type="button" id="clearRecordsBtn">清空</button>
+                    </div>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+
+            <!-- 右侧：打乱 + 计时 + 3D -->
+            <div class="right-col">
+                <div class="scramble-wrap">
+                    <div id="scrambleText" class="scramble">加载中...</div>
+                    <button type="button" id="newScrambleBtn">next</button>
+                    <div id="warnMsg" class="warn-text" style="color:#c82423;font-size:12px;margin-top:5px;display:none;"></div>
+                </div>
+
+                <div id="timerWrap">
+                    <div id="timeDisplay">0.00</div>
+                    <p id="tipText"></p>
+                </div>
+
+                <div id="scrambleViewer">
+                    <twisty-player id="scrambleCube" puzzle="3x3x3" background="none" control-panel="none"></twisty-player>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 详情弹窗 -->
+    <div id="detailModal">
+        <button class="detail-close" id="closeDetailBtn">×</button>
+        <h3 style="color:#0f2341; font-size:18px;">成绩详情</h3>
+        <div class="detail-scramble" id="detailScramble">打乱公式...</div>
+        <div class="detail-date" id="detailDate">日期...</div>
+        <div id="detailPenaltyBtns">
+            <button type="button" class="penalty-btn" data-act="p2">+2</button>
+            <button type="button" class="penalty-btn" data-act="dnf">DNF</button>
+            <button type="button" class="penalty-btn" data-act="clear">清除</button>
+            <button type="button" class="del-btn" data-act="del">删除</button>
+        </div>
+    </div>
+
+    <!-- 蓝牙卡片弹窗 -->
+    <div id="bluetoothModal" class="modal-card-overlay" role="dialog" aria-modal="true" aria-labelledby="bluetoothTitle">
+        <div class="modal-card">
+            <button type="button" class="modal-card-close" id="closeBluetoothBtn" aria-label="关闭蓝牙">×</button>
+            <h3 id="bluetoothTitle">蓝牙</h3>
+            <div class="bt-panel">
+                <p id="btSupportHint" class="bt-hint" hidden>
+                    当前浏览器不支持 Web Bluetooth。请使用桌面 Chrome / Edge 或 Android Chrome；iOS Safari 暂不支持。
+                </p>
+                <div class="bt-actions">
+                    <button type="button" id="btConnectBtn" class="bt-primary">连接设备</button>
+                    <button type="button" id="btDisconnectBtn" class="bt-secondary" hidden>断开</button>
+                </div>
+                <p id="btStatus" class="bt-status" data-kind="idle">未连接</p>
+                <label class="bt-field" for="btMacInput">
+                    <span>魔方 MAC（GAN 需要）</span>
+                    <input id="btMacInput" type="text" autocomplete="off" spellcheck="false"
+                        placeholder="AA:BB:CC:DD:EE:FF">
+                </label>
+                <div class="bt-actions">
+                    <button type="button" id="btMacSaveBtn" class="bt-secondary">保存 MAC</button>
+                    <button type="button" id="btMacClearBtn" class="bt-secondary">清除缓存</button>
+                </div>
+                <dl id="btInfo" class="bt-info" hidden></dl>
+                <div id="btTimerBox" class="bt-timer" hidden>
+                    <span id="btTimerState">—</span>
+                    <span id="btTimerTime">0:00.000</span>
+                </div>
+                <details class="bt-log-wrap">
+                    <summary>原始数据</summary>
+                    <pre id="btLog" class="bt-log"></pre>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置卡片弹窗 -->
+    <div id="settingsModal" class="modal-card-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="modal-card">
+            <button type="button" class="modal-card-close" id="closeSettingsBtn" aria-label="关闭设置">×</button>
+            <h3 id="settingsTitle">设置</h3>
+            <label class="setting-item">
+                <span>15秒观察</span>
+                <input type="checkbox" id="observeCheckbox">
+            </label>
+        </div>
+    </div>
+
+</main>
+
+<script type="module" src="src/timer-entry.js"></script>
+</body>
+</html>

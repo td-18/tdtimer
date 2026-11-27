@@ -189,3 +189,20 @@
 - 相关文件：`src/solver/dr.js`、`src/solver/index.js`、
   `src/scramble/wca/puzzles/333/search.js`、`solver.html`、
   `docs/ai/architecture.md`。
+
+## 2026-11-28 三模块入口与 3D 异步降级
+
+- 状态：已采纳
+- 背景：单页入口会同时加载公式数据、计时、蓝牙和 cubing.js；实测 CDN 延迟
+  2 秒会把首屏可用时间从约 3 秒拉到约 6.7 秒，持续卡住时页面超过 13 秒仍为空白。
+- 决定：拆成首页、计时、公式、训练四个静态页面；首页只保留纯 SVG 六面展开图，
+  不依赖 cubing.js。三个功能页使用普通链接互相跳转，进入后才加载对应数据。
+  训练页复用现有分组 / 套训练、计时与成绩规则，不再加载 WCA worker。
+  `twisty-player` 统一异步加载并设置 5 秒超时；失败时显示平面状态图与降级提示。
+- 影响：首页和计时页不再请求公式数据；公式页不再加载计时、成绩或蓝牙；训练页
+  不再加载本地 WCA 打乱模块。计时器改为通过 `onStart` / `onStop` 回调接入普通
+  打乱或训练题生成，统计和 localStorage key 不变。
+- 相关文件：`index.html`、`timer.html`、`formula.html`、`training.html`、
+  `src/timer-entry.js`、`src/formula-entry.js`、`src/training-entry.js`、
+  `src/training.js`、`src/twistyView.js`、`src/loadGuard.js`、`src/timer.js`、
+  `src/formula.js`、`src/scramble.js`、`src/lsllLoader.js`。

@@ -1,14 +1,13 @@
 // 公式库：模块/分类浏览、3D 演示、训练模式
-import { state } from "./state.js";
-import { genScr, invertAlg, resetScrambleCache } from "./scramble.js";
-import { showTab } from "./ui.js";
-import { renderHist } from "./records.js";
-import { normalizeCategories, groupCategories, getGroupCategories, HIDDEN_PUZZLES } from "./formulaSets.js";
+import { normalizeCategories, groupCategories, HIDDEN_PUZZLES } from "./formulaSets.js";
 import { getFormulaFamilies } from "./formulaFamilies.js";
 import { getPuzzleMeta, getTwistyPuzzle, normalizeFormulaAlg } from "./algNotation.js";
 import { applyAlgToFacelets, applyAlgToFaceletsForPuzzle, cubeThumbSVG, isTopLayerOnly, topFacePatternSVG } from "./cubeThumb.js";
 import { sq1ThumbSVG, sq1OrientationSVG, sq1PiecesFromAlg } from "./sq1Thumb.js";
 import { puzzleIconHTML } from "./puzzleIcons.js";
+import { invertAlg } from "./algInverse.js";
+import { decorateTwistyElement, loadTwisty } from "./twistyView.js";
+import { loadLsllOneStepFamily, lsllOneStepFamilies, lsllOneStepTotal } from "./lsllLoader.js";
 
 // LSLL 一步 / 两步的列表统一每页 50 条，翻页只替换列表内容。
 const FORMULA_PAGE_SIZE = 50;
@@ -490,76 +489,6 @@ function lsllFamilyLabel(catKey, name) {
     return "";
 }
 
-// 一步 LSLL 按 CubeRoot 的 41 个大类出缩略图，点进去再按需加载该大类的公式文件。
-// 缩略图和计数来自 data/lsll.js 的 families；每类公式单独放在
-// data/lsll-one-step/<slug>.js，避免首屏加载 57 万条公式。
-function lsllOneStepFamilies() {
-    const meta = (window.LSLLDB && Array.isArray(window.LSLLDB.families)) ? window.LSLLDB.families : [];
-    return meta
-        .filter((family) => family && family.key && family.slug && family.file)
-        .map((family) => ({
-            key: family.key,
-            slug: family.slug,
-            file: family.file,
-            facelets: family.facelets || "",
-            count: Number(family.count) || 0,
-        }));
-}
-
-function lsllOneStepTotal(families = lsllOneStepFamilies()) {
-    return families.reduce((sum, family) => sum + family.count, 0);
-}
-
-const lsllFamilyLoads = {};
-function loadLsllOneStepFamily(family) {
-    if (window.LSLLOneStep && Array.isArray(window.LSLLOneStep[family.slug])) {
-        return Promise.resolve(window.LSLLOneStep[family.slug]);
-    }
-    if (lsllFamilyLoads[family.slug]) return lsllFamilyLoads[family.slug];
-
-    lsllFamilyLoads[family.slug] = new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = family.file;
-        script.async = true;
-        script.onload = () => {
-            const rows = window.LSLLOneStep && window.LSLLOneStep[family.slug];
-            if (Array.isArray(rows)) resolve(rows);
-            else reject(new Error(`LSLL ${family.key} 数据为空`));
-        };
-        script.onerror = () => reject(new Error(`LSLL ${family.key} 加载失败`));
-        document.head.appendChild(script);
-    }).catch((err) => {
-        delete lsllFamilyLoads[family.slug];
-        throw err;
-    });
-
-    return lsllFamilyLoads[family.slug];
-}
-
-let lsllAllLoadPromise = null;
-function loadAllLsllOneStep() {
-    if (lsllAllLoadPromise) return lsllAllLoadPromise;
-
-    lsllAllLoadPromise = (async () => {
-        const families = lsllOneStepFamilies();
-        const rows = [];
-        for (let i = 0; i < families.length; i += 4) {
-            const batch = families.slice(i, i + 4);
-            const loaded = await Promise.all(batch.map(loadLsllOneStepFamily));
-            loaded.forEach((list) => rows.push(...list));
-        }
-        if (window.FormulaDB && window.FormulaDB["3x3"]) {
-            window.FormulaDB["3x3"]["LSLL 一步"] = rows;
-        }
-        return rows;
-    })().catch((err) => {
-        lsllAllLoadPromise = null;
-        throw err;
-    });
-
-    return lsllAllLoadPromise;
-}
-
 function renderLsllOneStep(raw, containerDiv, puzzleKey, puzzleType) {
     const families = lsllOneStepFamilies();
 
@@ -842,7 +771,6 @@ function renderLsllTwoStep(raw, containerDiv, puzzleKey, puzzleType) {
 }
 
 function jumpToZbFormula(catKey, caseName) {
-    showTab("formula");
     if (zbllJumpHandler) zbllJumpHandler(catKey, caseName);
 }
 
@@ -954,6 +882,11 @@ function makeTwistyPlayer(puzzleType, setup, alg, options = {}) {
     player.setAttribute("background", "none");
     player.setAttribute("hint-facelets", "none");
     player.setAttribute("autoplay", "false");
+    decorateTwistyElement(player, {
+        puzzle: puzzleType,
+        alg: alg || setup || "",
+        label: "公式状态平面图",
+    });
     return player;
 }
 
@@ -1439,12 +1372,9 @@ function renderFormulaRows(raw, containerDiv, puzzleKey, puzzleType, catKey = ""
             const setup = invertAlg(displayAlg);
 
             try {
-                const player = document.createElement("twisty-player");
-                player.setAttribute("puzzle", puzzleType);
-                player.setAttribute("experimental-setup-alg", setup);
-                player.setAttribute("alg", displayAlg);
-                player.setAttribute("control-panel", "bottom-row");
-                player.setAttribute("autoplay", "false");
+                const player = makeTwistyPlayer(puzzleType, setup, displayAlg, {
+                    controlPanel: "bottom-row",
+                });
                 box.appendChild(player);
                 watchPlayerForErrors(player, box, item);
             } catch (err) {
@@ -1478,7 +1408,14 @@ function renderFormulaRows(raw, containerDiv, puzzleKey, puzzleType, catKey = ""
 // 移除空白播放器并给出提示，避免留下一个不动的 3D 区域。
 function watchPlayerForErrors(player, box, item) {
     const model = player.experimentalModel;
-    if (!model || !model.puzzleAlg || !model.puzzleSetupAlg) return;
+    if (!model || !model.puzzleAlg || !model.puzzleSetupAlg) {
+        loadTwisty().then((ready) => {
+            if (ready && player.isConnected && player.parentNode === box) {
+                watchPlayerForErrors(player, box, item);
+            }
+        });
+        return;
+    }
 
     Promise.all([model.puzzleAlg.get(), model.puzzleSetupAlg.get()])
         .then(([algProp, setupProp]) => {
@@ -1516,186 +1453,7 @@ function describePlayerErrors(errors) {
     return "⚠️ 该公式的原始记法暂不支持 3D 演示";
 }
 
-function resetSetSelect() {
-    const select = document.getElementById("trainSetSelect");
-    if (!select) return;
-    while (select.firstChild) select.removeChild(select.firstChild);
-
-    const all = document.createElement("option");
-    all.value = "";
-    all.textContent = "整个分组";
-    select.appendChild(all);
-    select.disabled = true;
-}
-
-// 单套选择：整个分组 + 当前分组下的每个分类
-function fillSetOptions(puzzle, group, selected = "") {
-    const select = document.getElementById("trainSetSelect");
-    if (!select) return;
-    while (select.firstChild) select.removeChild(select.firstChild);
-
-    const all = document.createElement("option");
-    all.value = "";
-    all.textContent = "整个分组";
-    select.appendChild(all);
-
-    getGroupCategories(puzzle, group).forEach((cat) => {
-        const opt = document.createElement("option");
-        opt.value = cat.key;
-        opt.textContent = cat.key;
-        select.appendChild(opt);
-    });
-
-    select.disabled = false;
-    select.value = selected;
-}
-
-function readTrainGroup() {
-    const value = document.getElementById("trainGroupSelect").value;
-    if (!value) return null;
-    const sep = value.indexOf("|");
-    return { puzzle: value.slice(0, sep), group: value.slice(sep + 1) };
-}
-
-function syncTrainUI() {
-    const mode = state.trainMode;
-    const groupSel = document.getElementById("trainGroupSelect");
-    const setSel = document.getElementById("trainSetSelect");
-    const startBtn = document.getElementById("btnStartTrain");
-    const stopBtn = document.getElementById("btnStopTrain");
-    const bar = document.getElementById("trainBar");
-
-    if (mode) {
-        groupSel.value = mode[0] + "|" + mode[1];
-        fillSetOptions(mode[0], mode[1], mode[2] || "");
-        groupSel.disabled = true;
-        setSel.disabled = true;
-        startBtn.style.display = "none";
-        stopBtn.style.display = "inline-block";
-
-        const puzzleName = getPuzzleMeta(mode[0]).short;
-        const scope = mode[2] || "整个分组";
-        document.getElementById("trainBarText").textContent = `训练中：${puzzleName} · ${mode[1]} · ${scope}`;
-        bar.classList.add("show");
-    } else {
-        groupSel.value = "";
-        groupSel.disabled = false;
-        resetSetSelect();
-        startBtn.style.display = "inline-block";
-        startBtn.disabled = true;
-        stopBtn.style.display = "none";
-        bar.classList.remove("show");
-    }
-}
-
-// 用公式库的大类填充训练下拉框
-function fillTrainGroups() {
-    const select = document.getElementById("trainGroupSelect");
-    if (!select) return;
-    while (select.firstChild) select.removeChild(select.firstChild);
-
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "选择分组";
-    select.appendChild(placeholder);
-
-    const db = window.FormulaDB;
-    if (!db) return;
-
-    Object.keys(db)
-        .filter((puzzleKey) => HIDDEN_PUZZLES.indexOf(puzzleKey) === -1)
-        .forEach((puzzleKey) => {
-        const cats = normalizeCategories(puzzleKey, db[puzzleKey]);
-        const groups = groupCategories(puzzleKey, cats);
-        if (!groups.length) return;
-
-        const optgroup = document.createElement("optgroup");
-        optgroup.label = getPuzzleMeta(puzzleKey).short;
-
-        groups.forEach((group) => {
-            const opt = document.createElement("option");
-            opt.value = puzzleKey + "|" + group.name;
-            opt.textContent = group.name;
-            optgroup.appendChild(opt);
-        });
-
-        select.appendChild(optgroup);
-    });
-}
-
-export async function startTraining(puzzle, group, cat = "") {
-    // 一步 LSLL 的公式按大类存放在独立文件里；训练前先把整套加载进来。
-    const needsOneStep = puzzle === "3x3" && group === "LSLL" && (!cat || cat === "LSLL 一步");
-    if (needsOneStep) {
-        const startBtn = document.getElementById("btnStartTrain");
-        const oldText = startBtn ? startBtn.textContent : "";
-        if (startBtn) {
-            startBtn.disabled = true;
-            startBtn.textContent = "加载一步公式中…";
-        }
-        try {
-            await loadAllLsllOneStep();
-        } catch (err) {
-            const warn = document.getElementById("warnMsg");
-            if (warn) {
-                warn.style.display = "block";
-                warn.textContent = "⚠️ 一步 LSLL 公式加载失败，请刷新页面重试";
-            }
-            return;
-        } finally {
-            if (startBtn) {
-                startBtn.disabled = false;
-                startBtn.textContent = oldText || "开始训练";
-            }
-        }
-    }
-
-    state.trainMode = [puzzle, group, cat];
-    state.trainCase = "";
-    syncTrainUI();
-    showTab("timer");
-    resetScrambleCache();
-    renderHist();
-    genScr();
-}
-
-export function stopTraining() {
-    state.trainMode = null;
-    state.trainCase = "";
-    syncTrainUI();
-    const cube = document.getElementById("scrambleCube");
-    if (cube) cube.setAttribute("puzzle", state.puzzle.puzzle || state.puzzle.key);
-    resetScrambleCache();
-    renderHist();
-    genScr();
-}
-
 export function initFormulaUI() {
     buildFormulaUI();
-    fillTrainGroups();
-    syncTrainUI();
-
-    const groupSel = document.getElementById("trainGroupSelect");
-    const setSel = document.getElementById("trainSetSelect");
-    const startBtn = document.getElementById("btnStartTrain");
-
-    groupSel.onchange = () => {
-        const selected = readTrainGroup();
-        if (!selected) {
-            resetSetSelect();
-            startBtn.disabled = true;
-            return;
-        }
-        fillSetOptions(selected.puzzle, selected.group);
-        startBtn.disabled = false;
-    };
-
-    startBtn.onclick = async () => {
-        const selected = readTrainGroup();
-        if (!selected) return;
-        await startTraining(selected.puzzle, selected.group, setSel.value || "");
-    };
-
-    document.getElementById("btnStopTrain").onclick = () => stopTraining();
-    document.getElementById("btnExitTrain").onclick = () => stopTraining();
+    loadTwisty();
 }

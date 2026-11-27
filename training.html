@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>TDtimer · 训练</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+<script src="data/cuberoot.js"></script>
+<script src="data/lsll.js"></script>
+<script src="formulas.js"></script>
+</head>
+<body>
+<header class="app-header">
+    <a class="brand" href="index.html" aria-label="TDtimer 首页">TDtimer</a>
+    <nav class="module-nav" aria-label="功能模块">
+        <a href="timer.html">计时</a>
+        <a href="formula.html">公式</a>
+        <a href="training.html" aria-current="page">训练</a>
+    </nav>
+</header>
+
+<main class="page">
+    <div class="trainerPanel">
+        <span class="trainer-label">分组训练</span>
+        <select id="trainGroupSelect" aria-label="选择训练分组">
+            <option value="">选择分组</option>
+        </select>
+        <select id="trainSetSelect" aria-label="选择训练套" disabled>
+            <option value="">整个分组</option>
+        </select>
+        <button type="button" id="btnStartTrain" disabled>开始训练</button>
+        <button type="button" id="btnStopTrain" class="stop-btn">停止训练</button>
+    </div>
+
+    <div id="trainBar">
+        <span id="trainBarText">训练中</span>
+        <button type="button" id="btnExitTrain">退出训练</button>
+    </div>
+
+    <div class="timer-layout">
+        <div class="left-col">
+            <div class="panel-toggle">
+                <button type="button" id="btnStatTab" class="active">统计</button>
+                <button type="button" id="btnHistoryTab">成绩</button>
+            </div>
+
+            <div id="statPanel">
+                <table>
+                    <tr><th>单次</th><th>当前</th><th>最佳</th></tr>
+                    <tr><td>单次</td><td id="curSingle">-</td><td id="bestSingle">-</td></tr>
+                    <tr><td>mo3</td><td id="mo3">-</td><td id="bestMo3">-</td></tr>
+                    <tr><td>ao5</td><td id="ao5">-</td><td id="bestAo5">-</td></tr>
+                    <tr><td>ao12</td><td id="ao12">-</td><td id="bestAo12">-</td></tr>
+                    <tr><td>ao50</td><td id="ao50">-</td><td id="bestAo50">-</td></tr>
+                    <tr><td>ao100</td><td id="ao100">-</td><td id="bestAo100">-</td></tr>
+                </table>
+            </div>
+
+            <div id="historyPanel">
+                <div class="history-head">
+                    <span class="history-hint">点击记录查看打乱</span>
+                    <button type="button" id="clearRecordsBtn">清空</button>
+                </div>
+                <div id="historyList"></div>
+            </div>
+        </div>
+
+        <div class="right-col">
+            <div class="scramble-wrap">
+                <div id="scrambleText" class="scramble">请选择训练分组</div>
+                <button type="button" id="newScrambleBtn">next</button>
+                <div id="warnMsg" class="warn-text"></div>
+            </div>
+
+            <div id="timerWrap">
+                <div id="timeDisplay">0.00</div>
+            </div>
+
+            <div id="scrambleViewer">
+                <twisty-player id="scrambleCube" puzzle="3x3x3" background="none" control-panel="none"></twisty-player>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailModal">
+        <button class="detail-close" id="closeDetailBtn">×</button>
+        <h3>成绩详情</h3>
+        <div class="detail-scramble" id="detailScramble">打乱公式...</div>
+        <div class="detail-date" id="detailDate">日期...</div>
+        <div id="detailPenaltyBtns">
+            <button type="button" class="penalty-btn" data-act="p2">+2</button>
+            <button type="button" class="penalty-btn" data-act="dnf">DNF</button>
+            <button type="button" class="penalty-btn" data-act="clear">清除</button>
+            <button type="button" class="del-btn" data-act="del">删除</button>
+        </div>
+    </div>
+</main>
+
+<script type="module" src="src/training-entry.js"></script>
+</body>
+</html>

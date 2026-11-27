@@ -1,10 +1,9 @@
-// 打乱：cubing.js 动态加载 + 本地降级 + 训练模式打乱
-import { state, fData, getRandomAUF } from "./state.js";
-import { getGroupCategories } from "./formulaSets.js";
-import { getTwistyPuzzle, normalizeFormulaAlg, supportsRandomAUF } from "./algNotation.js";
+// 打乱：cubing.js 动态加载 + 本地降级
+import { state, fData } from "./state.js";
 import { getScrambleService } from "./scramble/wca/index.js";
+import { settleWithin } from "./loadGuard.js";
+import { decorateTwistyElement } from "./twistyView.js";
 
-let Alg = null;
 let randomScrambleForEvent = null;
 let libFailed = false;
 let libSettled = false;
@@ -29,11 +28,11 @@ export function loadCubing() {
     if (loading) return loading;
     loading = (async () => {
         try {
-            const [algMod, scrambleMod] = await Promise.all([
-                import("https://cdn.cubing.net/v0/js/cubing/alg"),
+            const scrambleMod = await settleWithin(
                 import("https://cdn.cubing.net/v0/js/cubing/scramble"),
-            ]);
-            Alg = algMod.Alg;
+                5000,
+                "cubing.js 打乱器"
+            );
             randomScrambleForEvent = scrambleMod.randomScrambleForEvent;
             if (!randomScrambleForEvent) libFailed = true;
         } catch (e) {
@@ -105,6 +104,30 @@ function prefetchLocal(puzzle) {
     localPrefetchPromises.set(puzzleKey, promise);
 }
 
+// 计时期间预取下一把（由 timer.js 在开始计时时调用）。
+// 放在计时中做，是为了不和「准备阶段」的交互抢主线程/带宽；
+// 用户解完停表时 genScr() 直接命中缓存，看起来是瞬时的。
+export function prefetchNextScramble() {
+    if (state.trainMode) return;
+    const puzzle = state.puzzle;
+    if (!puzzle || !getLocalEventId(puzzle)) return;
+    prefetchLocal(puzzle);
+}
+
+// 项目被选中时只加载该项目的实现体（不生成打乱）。
+// 这样 11 个 provider 不必在首条打乱前一起下载，切项目才付该项目的成本。
+export function preloadLocalProvider(puzzle) {
+    const eventId = getLocalEventId(puzzle);
+    if (!eventId) return Promise.resolve(false);
+    return getScrambleService()
+        .init(eventId, { timeoutMs: 30000 })
+        .then(() => true)
+        .catch((e) => {
+            console.log(`本地 ${eventId} 预热失败`, e);
+            return false;
+        });
+}
+
 async function takeLocal(puzzle, token, onProgress) {
     const eventId = getLocalEventId(puzzle);
     if (!eventId) return null;
@@ -135,38 +158,6 @@ async function takeLocal(puzzle, token, onProgress) {
     }
 }
 
-// cubing.js 尚未加载或无法解析时，用纯文本规则求逆，保证公式库先显示的
-// 状态卡片不会因为异步加载时序而显示成还原态。
-function invertAlgFallback(alg) {
-    return String(alg || "")
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .reverse()
-        .map((token) => {
-            if (token === "/") return "/";
-            const pair = token.match(/^\((-?\d+),(-?\d+)\)$/);
-            if (pair) return `(${-Number(pair[1])},${-Number(pair[2])})`;
-            if (token.endsWith("++")) return token.slice(0, -2) + "--";
-            if (token.endsWith("--")) return token.slice(0, -2) + "++";
-            if (token.endsWith("2'")) return token.slice(0, -1);
-            if (token.endsWith("'")) return token.slice(0, -1);
-            if (token.endsWith("2")) return token;
-            return token + "'";
-        })
-        .join(" ");
-}
-
-export function invertAlg(alg) {
-    try {
-        // cubing.js 偶尔输出 U2'，和 U2 等价，统一成 U2
-        if (Alg) return new Alg(alg).invert().toString().replace(/2'/g, "2");
-    } catch (e) {
-        // 落到下面的文本规则
-    }
-    return invertAlgFallback(alg);
-}
-
 function setPuzzle(puzzleKey) {
     const cube = $("scrambleCube");
     if (cube && puzzleKey) cube.setAttribute("puzzle", puzzleKey);
@@ -181,6 +172,7 @@ function setScramble(text, fallback, puzzleKey) {
         // 先设置 puzzle 再设置 alg，避免切换项目后残留上一把的算法
         if (puzzleKey) cube.setAttribute("puzzle", puzzleKey);
         cube.setAttribute("alg", text);
+        decorateTwistyElement(cube, { puzzle: puzzleKey, alg: text, label: "打乱状态" });
     }
     warn.style.display = fallback ? "block" : "none";
     if (fallback) warn.textContent = "⚠️ 降级：本地打乱";
@@ -195,6 +187,7 @@ function showOffline(puzzleKey) {
     if (cube) {
         if (puzzleKey) cube.setAttribute("puzzle", puzzleKey);
         cube.removeAttribute("alg");
+        decorateTwistyElement(cube, { puzzle: puzzleKey, alg: "", label: "打乱状态" });
     }
 }
 
@@ -215,7 +208,6 @@ async function prefetch() {
 
 export async function genScr() {
     const token = ++genToken;
-    if (state.trainMode) return genTrainScramble();
 
     const puzzle = state.puzzle;
     const puzzleKey = puzzle.puzzle || puzzle.key;
@@ -236,7 +228,7 @@ export async function genScr() {
         if (token !== genToken) return;
         if (local) {
             setScramble(local, false, puzzleKey);
-            prefetchLocal(puzzle);
+            // 预取已挪到计时期间（见 prefetchNextScramble），这里不再抢带宽
             return;
         }
     }
@@ -287,50 +279,4 @@ export async function genScr() {
 
 function randomOf(list) {
     return list[Math.floor(Math.random() * list.length)];
-}
-
-// 训练模式：从所选分组里随机分类、随机公式，打乱状态也随机（随机 AUF）
-async function genTrainScramble() {
-    const [puzzleKey, groupName, catName] = state.trainMode;
-    let categories = getGroupCategories(puzzleKey, groupName).filter((c) => c.cases && c.cases.length);
-    if (catName) categories = categories.filter((c) => c.key === catName);
-    if (!categories.length) {
-        setScramble("该分组暂无公式", true);
-        return;
-    }
-
-    // 先随机分类，再从该分类里随机公式；避免连着出现同一题
-    const cat = randomOf(categories);
-    let picked = null;
-    for (let attempt = 0; attempt < 8; attempt++) {
-        picked = randomOf(cat.cases);
-        if (cat.cases.length < 2 || cat.key + "|" + picked[0] !== state.trainCase) break;
-    }
-
-    const [name, alg] = picked;
-    state.trainCase = cat.key + "|" + name;
-
-    const displayAlg = normalizeFormulaAlg(puzzleKey, alg);
-    const setup = invertAlg(displayAlg);
-    let full = setup;
-    if (supportsRandomAUF(puzzleKey)) {
-        const aufPre = getRandomAUF();
-        const aufPost = getRandomAUF();
-        full = (aufPre + setup + " " + aufPost).trim();
-    }
-
-    state.scramble = full;
-    $("scrambleText").textContent = `[${cat.key} · ${name}] 打乱: ${full}`;
-
-    const warn = $("warnMsg");
-    warn.style.display = "block";
-    warn.textContent = supportsRandomAUF(puzzleKey)
-        ? "提示: 做原公式（注意 AUF）即可复原"
-        : "提示: 打乱为公式的逆序，做原公式即可复原";
-
-    const cube = $("scrambleCube");
-    if (cube) {
-        cube.setAttribute("puzzle", getTwistyPuzzle(puzzleKey));
-        cube.setAttribute("alg", full);
-    }
 }

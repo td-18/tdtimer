@@ -9,23 +9,26 @@
 </head>
 <body>
 <header class="app-header">
-    <span class="brand">TDtimer · 计时</span>
-    <div class="timer-tools" aria-label="计时工具">
-        <button id="navBluetooth" title="蓝牙" aria-label="蓝牙" aria-haspopup="dialog" aria-expanded="false">
+    <a class="module-exit" href="index.html" aria-label="退出计时并返回首页">← 退出</a>
+    <span class="brand"><span class="brand-name">TDtimer</span><span class="brand-section"> · 计时</span></span>
+    <div class="module-header-actions">
+        <div class="timer-tools" aria-label="计时工具">
+            <button id="navBluetooth" title="蓝牙" aria-label="蓝牙" aria-haspopup="dialog" aria-expanded="false">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f2341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M7 7l10 10-5 5V2l5 5L7 17"></path>
             </svg>
-        </button>
-        <div class="puzzleDropdownWrap">
-            <button type="button" id="puzzleMainBtn" aria-haspopup="menu" aria-expanded="false">三阶</button>
-            <div id="puzzleDropdownList" role="menu"></div>
+            </button>
+            <div class="puzzleDropdownWrap">
+                <button type="button" id="puzzleMainBtn" aria-haspopup="menu" aria-expanded="false">三阶</button>
+                <div id="puzzleDropdownList" role="menu"></div>
+            </div>
+            <button id="navSettings" title="设置" aria-label="设置" aria-haspopup="dialog" aria-expanded="false">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f2341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
         </div>
-        <button id="navSettings" title="设置" aria-label="设置" aria-haspopup="dialog" aria-expanded="false">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f2341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-        </button>
     </div>
 </header>
 

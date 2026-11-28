@@ -10,13 +10,25 @@ body{
 /* ===== 三模块顶部导航 ===== */
 .app-header {
     max-width: 900px; margin: 0 auto 22px;
-    display: grid; grid-template-columns: 1fr auto;
+    display: grid; grid-template-columns: auto auto 1fr;
     align-items: center; gap: 16px;
 }
 .brand {
     justify-self: start; color: #0f2341; text-decoration: none;
     font-size: 22px; font-weight: 900; letter-spacing: 1px;
 }
+.module-header-actions {
+    grid-column: 3; justify-self: end;
+    display: flex; align-items: center; gap: 10px;
+}
+.module-exit {
+    padding: 7px 11px; border: 1px solid #cbdceb; border-radius: 9px;
+    background: #fff; color: #52657a; text-decoration: none;
+    font-size: 13px; font-weight: 800; white-space: nowrap;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.module-exit:hover { border-color: #8db6dd; background: #f7fbff; color: #0f2341; }
+.module-exit:focus-visible { outline: 2px solid #1b5eb5; outline-offset: 2px; }
 .timer-tools { justify-self: end; display: flex; align-items: center; gap: 8px; }
 #navBluetooth, #navSettings{
     background:none; border:none; cursor:pointer; color:#0f2341; 
@@ -385,11 +397,15 @@ twisty-player[data-td-fallback] {
 @media (max-width: 768px) {
     body { padding: 14px 14px 32px; }
     .app-header {
-        grid-template-columns: 1fr auto;
-        gap: 10px 12px;
+        grid-template-columns: auto auto 1fr;
+        gap: 10px 6px;
     }
     .brand { font-size: 19px; }
-    .timer-tools { grid-column: 2; grid-row: 1; }
+    .brand-section { display: none; }
+    .module-header-actions { gap: 4px; }
+    .timer-tools { gap: 2px; }
+    .module-exit { padding: 6px 8px; font-size: 12px; }
+    #puzzleMainBtn { padding: 5px 12px; }
     .home-main { margin-top: 14px; }
     .module-grid { grid-template-columns: 1fr; }
     .module-card { min-height: 140px; }
